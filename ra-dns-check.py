@@ -8,15 +8,16 @@
 # Parse, summarize, sort, and display measurement results for DNS queries
 # made by RIPE Atlas probes
 
-# Need a license here...
+# Please see the file LICENSE for the license.
 
 import argparse
+import configparser
 import json
+import os
+import re
+import statistics
 import sys
 import time
-import statistics
-import re
-import os
 from datetime import datetime
 # to decompress RIPE Atlas probe data file
 import bz2
@@ -31,21 +32,82 @@ from ripe.atlas.cousteau import Measurement
 # for debugging
 from pprint import pprint
 
-############
+###################
 #
-# Some configurable settings users might want to change.
+# Configurable settings
+#
+my_config_file = os.environ['HOME'] + '/.ra-dns-check.conf'
+#
+# There are some defaults defined in the "sample_config" string below, but
+# you should edit them in the config file instead of bellow.
+# (If the config file does not exist, this script creates it from this string.)
+#
+# Options specified in the command line can then also be overridden by what's specified on the command line.
+#
+sample_config = """# Config file for ra-dns-check.py
+#
+# Please do not remove or change the next line ("[DEFAULT]"), as python's ConfigParser module needs it.
+[DEFAULT]
+#
 # Wikipedia says 2010 was when RIPE Atlas was established, so we use that
 # as a starting point for when it might contain some data.
-oldest_atlas_result_datetime = '2010 01 01 00:00:00'
+oldest_atlas_result_datetime = 2010 01 01 00:00:00
+#
 # There are a couple of files used to locally cache probe data, the first comes directly from RIPE:
-ripe_atlas_probe_properties_raw_file = os.environ['HOME'] + '/.RIPE_atlas_all_probe_properties.bz2'
+ripe_atlas_probe_properties_raw_file = """ + os.environ['HOME'] + '/.RIPE_atlas_all_probe_properties.bz2' + """
 # the second cache file we generate, based upon probe info we request (one at a time) from the RIPE Atlas API.
-ripe_atlas_probe_properties_json_cache_file = os.environ['HOME'] + '/.RIPE_atlas_probe_properties_cache_file.json'
+ripe_atlas_probe_properties_json_cache_file = """ + os.environ['HOME'] + '/.RIPE_atlas_probe_properties_cache_file.json' + """
 # The max age of the RIPE Atlas probe info file. (older than this and we download a new one)
-raw_probe_properties_file_max_age=24 * 60 * 60
-ripe_atlas_current_probe_properties_url='https://ftp.ripe.net/ripe/atlas/probes/archive/meta-latest'
-#potentially_interesting_probe_properties = ('address_v4', 'address_v6',
-#                                            'api_key', 'asn_v4', 'asn_v6', 'country_code')
+raw_probe_properties_file_max_age = 86400
+# where to fetch the RA probe properties file
+ripe_atlas_current_probe_properties_url = https://ftp.ripe.net/ripe/atlas/probes/archive/meta-latest
+# The ordered list of properties to display in the (default) detailed listing per probe.
+probe_properties_to_report = ['probe_id', 'asn', 'country_code',
+                               'ip_address', 'rt_a', 'rt_b', 'rt_delta', 'dns_response']
+"""
+#
+####################
+#
+# Config file
+#
+all_config = configparser.ConfigParser()
+try:
+    if os.stat(my_config_file):
+        if os.access(my_config_file, os.R_OK):
+            ### sys.stderr.write('Found config file at %s; reading it now...\n' % my_config_file)
+            all_config.read(my_config_file)
+        else:
+            sys.stderr.write('Config file exists at %s, but is not readable.\n' % my_config_file)
+except FileNotFoundError:
+    ### sys.stderr.write('Config file does not exist at %s; creating new one...\n' % my_config_file)
+    all_config.read_string(sample_config)
+    with open(my_config_file, 'w') as cf:
+        cf.write(sample_config)
+
+#
+# FIXME ... the problem is all the config tuples are strings, and now we need to convert them back.
+config = all_config['DEFAULT']
+#
+# Loop through what's in the config and see if each variable is in the
+# following list of expected config variables to catch any unexpected
+# ("illegal") parameters in the config file, rather than let a typo or
+# some bit of random (non-comment) text in the config file go unnoticed.
+expected_config_items =['oldest_atlas_result_datetime',
+                 'ripe_atlas_probe_properties_json_cache_file',
+                 'ripe_atlas_probe_properties_raw_file',
+                 'raw_probe_properties_file_max_age',
+                 'ripe_atlas_current_probe_properties_url',
+                 'probe_properties_to_report']
+for item in config:
+    if item not in expected_config_items:
+        sys.stderr.write('Unknown parameter in config file: %s\n' % item)
+        exit(1)
+    ### else:
+    ###    sys.stderr.write('%s : %s\n' % (item, config[item]))
+
+### exit()
+#
+#
 ####################
 #
 # Argument processing and usage info (argparse lib automatically provides -h)
@@ -76,11 +138,8 @@ parser = argparse.ArgumentParser(description='Display statistics from RIPE Atlas
 # Compare one measurement's (12016241) for two points in time: 20210101_0000 and 20210301_0000.
 %(prog)s --datetime1 20210101_0000 --datetime2 20210301_0000 12016241
 ''')
-## FIXME: datetime comparison not implemented yet
 parser.add_argument('--datetime1', '--dt1', help='date-time to start 10-minute period for FIRST set of results (UTC). Format: 1970-01-01_0000 OR the number of seconds since then (AKA "Unix time")', type=str)
 parser.add_argument('--datetime2', '--dt2', help='date-time to start 10-minute period for SECOND set of results (UTC) Format: 1970-01-01_0000 OR the number of seconds since then (AKA "Unix time")', type=str)
-# parser.add_argument('--duration1', '--dr1', help='NOT IMPLEMENTED YET! Seconds after datetime1 to use as end of then period when requesting samples for the first measurment', type=int, default=600)
-# parser.add_argument('--duration2', '--dr2', help='NOT IMPLEMENTED YET! Seconds after datetime2 to use as end of then period when requesting samples for the first measurment', type=int, default=600)
 parser.add_argument('-a', '--all_probes', help='show information for probes presnt in *either* result sets, not just those present in *both* sets', action='store_true', default=False)
 parser.add_argument('-c', '--color', '--colour', help='colorize output', action="store_true", default=True)
 parser.add_argument('-C', '--no_color', '--no_colour', help='do NOT colorized output (AKA "colourised output")', action="store_true")
@@ -88,7 +147,6 @@ parser.add_argument('-e', '--emphasis_chars', help='add a trailing char (! or *)
 parser.add_argument('-H', '--no_header', help='Do NOT show the header above the probe list', action="store_true")
 parser.add_argument('-i', '--item_occurence_to_return', help='Which item to return from the split-list. First element is 0.', type=int, default='1')
 parser.add_argument('-l', '--latency_diff_threshold', help='the amount of time difference (ms) that is significant when comparing latencies bewtween tests', type=int, default=5)
-#parser.add_argument('-p', '--probe_properties_to_report', help='List of the probe properties to show.  Possible choices: %s ' % potentially_interesting_probe_properties, default='address_v4, asn_v4')
 parser.add_argument('-P', '--donotlistprobes', help='do NOT list the results for each probe', action='store_true')
 parser.add_argument('-s', '--list_slow_probes_only', help='in per-probe list, show ONLY the probes reporting response times', action='store_true')
 parser.add_argument('-S', '--slow_threshold', help='override the default slow response threshold', default=50, type=int)
@@ -109,8 +167,8 @@ data_sources = args[0].filename_or_msmid
 # date-times are good.
 # First, let's figure out what the current unix time is in UTC.
 current_unixtime = int(time.time())
-# unix-time representation of oldest_atlas_result_datetime, which is hardcoded up above.
-oldest_result_unixtime = int(time.mktime(time.strptime(oldest_atlas_result_datetime, '%Y %m %d %H:%M:%S')))
+# unix-time representation of config['oldest_atlas_result_datetime'], which is hardcoded up above.
+oldest_result_unixtime = int(time.mktime(time.strptime(str(config['oldest_atlas_result_datetime']), '%Y %m %d %H:%M:%S')))
 
 ##################################################
 #
@@ -118,7 +176,7 @@ oldest_result_unixtime = int(time.mktime(time.strptime(oldest_atlas_result_datet
 #
 ##########
 # Return true if a supplied number falls in between now hours and
-# oldest_atlas_result_datetime
+# config['oldest_atlas_result_datetime']
 def is_valid_unixtime(_possible_unixtime):
     if isinstance(_possible_unixtime, int) and int(_possible_unixtime) < current_unixtime and int(_possible_unixtime) >= oldest_result_unixtime:
         return True
@@ -467,7 +525,7 @@ def check_update_probe_properties_cache_file(pprf, ppcf, ppurl):
         pprf_age = 0
 
     # Check to see if the current time minus the raw file age is more than the expiry
-    if ((current_unixtime - pprf_age) > raw_probe_properties_file_max_age):
+    if ((current_unixtime - pprf_age) > int(config['raw_probe_properties_file_max_age'])):
         # Fetch a new raw file, and generate the JSON format cache file
         try:
             ### sys.stderr.write ('%s is out of date, so trying to fetch fresh probe data from RIPE...\n' % pprf)
@@ -475,8 +533,8 @@ def check_update_probe_properties_cache_file(pprf, ppcf, ppurl):
             html = open(pprf)
             html.close()
         except:
-            ### sys.stderr.write('Cannot urlretrieve %s -- continuing without updating %s \n' %
-            ### (ppurl, pprf))
+            sys.stderr.write('Cannot urlretrieve %s -- continuing without updating %s \n' %
+             (ppurl, pprf))
             os.replace(pprf + '.old', pprf)
             return(2)
 
@@ -648,11 +706,13 @@ if not args[0].donotlistprobes:
     else:
         probe_ids_to_list = common_probe_ids
     # Check (and maybe update) the local probes' properties cache file.
-    fixme = check_update_probe_properties_cache_file(ripe_atlas_probe_properties_raw_file,
-                                                     ripe_atlas_probe_properties_json_cache_file,
-                                                     ripe_atlas_current_probe_properties_url)
+    _res = check_update_probe_properties_cache_file(config['ripe_atlas_probe_properties_raw_file'],
+                                                     config['ripe_atlas_probe_properties_json_cache_file'],
+                                                     config['ripe_atlas_current_probe_properties_url'])
+    if _res != 0:
+        sys.stderr.write('Unexpected result when updating local cache files: %s\n' % _res)
     p_probe_properties = load_probe_properties(probe_ids_to_list,
-                                       ripe_atlas_probe_properties_json_cache_file)
+                                       config['ripe_atlas_probe_properties_json_cache_file'])
     #
     # Setting up and printing the header for the probes it's remarkably
     # complicated.
