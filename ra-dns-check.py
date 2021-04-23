@@ -45,8 +45,16 @@ my_config_file = os.environ['HOME'] + '/.ra-dns-check.conf'
 # Options specified in the command line can then also be overridden by what's specified on the command line.
 #
 sample_config = """# Config file for ra-dns-check.py
+# Some important synxax notes:
 #
-# Please do not remove or change the next line ("[DEFAULT]"), as python's ConfigParser module needs it.
+# 1) This file is read by the ConfigParser python module, and (perhaps
+#    surprisingly) that means it expects INI syntax *NOT* python syntax. So:
+#    * do NOT enclose strings within quotes or double quotes
+#    * protect (escape) any % character with another %
+#    * use either : or = to separate a config variable (key) and its value.
+#    * spaces are allowed *within* (as part of) a value or key!
+#
+# 2) Please do not remove or change the next line ("[DEFAULT]"), as python's ConfigParser module needs it.
 [DEFAULT]
 #
 # Wikipedia says 2010 was when RIPE Atlas was established, so we use that
@@ -104,8 +112,8 @@ for item in config:
         exit(1)
     ### else:
     ###    sys.stderr.write('%s : %s\n' % (item, config[item]))
+###exit()
 
-### exit()
 #
 #
 ####################
