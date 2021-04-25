@@ -107,9 +107,13 @@ options_setup_dict_integer = {
 #
 # Options specified in the command line can then also be overridden by what's specified on the command line.
 #
-sample_config = """; Config file for ra-dns-check.py
-; This file is automatically created if it does not exist,
-;  but after its creation, the script won't change it, so you can!
+sample_config = """;
+; Config file for ra-dns-check.py
+;
+; This file is automatically created if it does not exist.
+; After its initial creation, the script won't change it, but you can!
+; (If you ever want to reset everything to the script defaults,
+;  you can rename or delete this file and the script will create a new one.)
 ;
 ; Some important notes on this file's syntax :
 ;
@@ -130,7 +134,8 @@ sample_config = """; Config file for ra-dns-check.py
 ;
 ; 3) Keep the key-value pairs in the approriate section for their type:
 ;    string, boolean, or integer.
-;
+
+;;;;;;;;;;;;;;;;;;;;
 [STRING]
 ;
 ; Wikipedia says 2010 was when RIPE Atlas was established, so we use that
@@ -165,14 +170,14 @@ for k in options_setup_dict_string.keys():
     sample_config += (k + ' = ' + str(options_setup_dict_string[k]['default']) + '\n')
     expected_config_items.append(k)
 #
-sample_config += "\n[BOOLEAN]\n"
+sample_config += "\n;;;;;;;;;;;;;;;;;;;;\n[BOOLEAN]\n"
 for k in options_setup_dict_boolean.keys():
     sample_config += (';\n')
     sample_config += ('; ' + options_setup_dict_boolean[k]['help'] + '\n')
     sample_config += (k + ' = ' + str(options_setup_dict_boolean[k]['default']) + '\n')
     expected_config_items.append(k)
 #
-sample_config += "\n[INTEGER]\n"
+sample_config += "\n;;;;;;;;;;;;;;;;;;;;\n[INTEGER]\n"
 for k in options_setup_dict_integer.keys():
     sample_config += (';\n')
     sample_config += ('; ' + options_setup_dict_integer[k]['help'] + '\n')
@@ -1092,4 +1097,3 @@ if not args[0].do_not_list_probes:
             #               format_clear):
             #         sys.stderr.write(str(a) + ' | ')
             #     sys.stderr.write('\n')
-
