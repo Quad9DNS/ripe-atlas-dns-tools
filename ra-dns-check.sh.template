@@ -5,8 +5,8 @@
 # Wrapper script around ra-dns-check.py for when it's run in a python
 # virtual environment
 
-_INSTALL_DIR=/Users/johan/ripe-atlas-dns-tool
-_PYTHON_VENV_DIR=/Users/johan/ripe-atlas-dns-tool/py-venv
+_INSTALL_DIR=__INSTALL_DIR__
+_PYTHON_VENV_DIR=__PYTHON_VENV_DIR__
 . $_PYTHON_VENV_DIR/bin/activate
 
 $_INSTALL_DIR/ra-dns-check.py $@

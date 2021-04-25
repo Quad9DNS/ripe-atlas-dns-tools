@@ -980,6 +980,8 @@ if not args[0].do_not_list_probes:
     ### print (probe_ids_to_list)
     ### print(probe_detail_line_format_string)
     for probe_id in probe_ids_to_list:
+        if probe_id is None:
+            break
         ### print('{f_probe_id:s}'.format(f_probe_id=probe_id))
         #
         # Prepare what will be printed based on result set.
@@ -1063,8 +1065,8 @@ if not args[0].do_not_list_probes:
                 else:
                     sites_fmt_chars = fmt.clear
                 format_clear = fmt.clear
-            # try:
-            print(probe_detail_line_format_string.format(f_probe_id=probe_id,
+            try:
+                print(probe_detail_line_format_string.format(f_probe_id=probe_id,
                                                          f_asn=str(p_probe_properties[probe_id]['display_asn']),
                                                          f_country_code=p_probe_properties[probe_id]['country_code'],
                                                          f_ip_address=p_probe_properties[probe_id]['display_address'],
@@ -1079,21 +1081,21 @@ if not args[0].do_not_list_probes:
                                                          f_dns_response=sites_string,
                                                          f_sites_emph_char=sites_emph_char,
                                                          f_fmt_clear=format_clear))
-            # except:
-            #     for a in (probe_id,
-            #               str(p_probe_properties[probe_id]['display_asn']),
-            #               p_probe_properties[probe_id]['country_code'],
-            #               p_probe_properties[probe_id]['display_address'],
-            #               rt_a_fmt_chars,
-            #               rt_a,
-            #               rt_b_fmt_chars,
-            #               rt_b,
-            #               rt_diff_fmt_chars,
-            #               rt_diff,
-            #               rt_emph_char,
-            #               sites_fmt_chars,
-            #               sites_string,
-            #               sites_emph_char,
-            #               format_clear):
-            #         sys.stderr.write(str(a) + ' | ')
-            #     sys.stderr.write('\n')
+            except:
+                for a in (probe_id,
+                          str(p_probe_properties[probe_id]['display_asn']),
+                          p_probe_properties[probe_id]['country_code'],
+                          p_probe_properties[probe_id]['display_address'],
+                          rt_a_fmt_chars,
+                          rt_a,
+                          rt_b_fmt_chars,
+                          rt_b,
+                          rt_diff_fmt_chars,
+                          rt_diff,
+                          rt_emph_char,
+                          sites_fmt_chars,
+                          sites_string,
+                          sites_emph_char,
+                          format_clear):
+                    sys.stderr.write(str(a) + ' | ')
+                sys.stderr.write('\n')
