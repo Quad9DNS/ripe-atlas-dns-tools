@@ -9,7 +9,7 @@ ra-dns-check.sh: ra-dns-check.sh.template
 	sed "s?__INSTALL_DIR__?$(INSTALL_DIR)? ; s?__PYTHON_VENV_DIR__?$(PYTHON_VENV_DIR)?" $? > ra-dns-check.sh
 
 
-install: ra-dns-check.py ra-dns-check.sh venv
+install: ra-dns-check.py ra-dns-check.sh
 	-mkdir $(INSTALL_DIR)
 	install -m 555 ra-dns-check.py ra-dns-check.sh $(INSTALL_DIR)
 
