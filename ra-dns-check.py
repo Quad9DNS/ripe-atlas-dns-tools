@@ -754,6 +754,7 @@ def load_probe_properties(probe_ids, ppcf):
             #### sys.stderr.write ('NOT cached, trying RIPE Atlas...')
             try:
                 ripe_result = Probe(id=p)
+                #
                 matched_probe_info[p] = {'asn_v4': ripe_result.asn_v4,
                                          'asn_v6': ripe_result.asn_v6,
                                          'country_code': ripe_result.country_code,
@@ -980,8 +981,8 @@ if not args[0].do_not_list_probes:
     ### print (probe_ids_to_list)
     ### print(probe_detail_line_format_string)
     for probe_id in probe_ids_to_list:
-        if probe_id is None:
-            break
+        #if probe_id is None:
+        #    break
         ### print('{f_probe_id:s}'.format(f_probe_id=probe_id))
         #
         # Prepare what will be printed based on result set.
@@ -995,6 +996,8 @@ if not args[0].do_not_list_probes:
             p_probe_properties[probe_id]['display_asn'] = '-'
         if p_probe_properties[probe_id]['display_address'] is None:
             p_probe_properties[probe_id]['display_address'] = '-'
+        if p_probe_properties[probe_id]['country_code'] is None:
+            p_probe_properties[probe_id]['country_code'] = '-'
         ### print(probe_id, p_probe_properties[probe_id]['display_address'])
         # generate an response_set + probe_id to use as an index into
         # various dicts with responses
@@ -1065,8 +1068,8 @@ if not args[0].do_not_list_probes:
                 else:
                     sites_fmt_chars = fmt.clear
                 format_clear = fmt.clear
-            try:
-                print(probe_detail_line_format_string.format(f_probe_id=probe_id,
+            # try:
+            print(probe_detail_line_format_string.format(f_probe_id=probe_id,
                                                          f_asn=str(p_probe_properties[probe_id]['display_asn']),
                                                          f_country_code=p_probe_properties[probe_id]['country_code'],
                                                          f_ip_address=p_probe_properties[probe_id]['display_address'],
@@ -1081,21 +1084,22 @@ if not args[0].do_not_list_probes:
                                                          f_dns_response=sites_string,
                                                          f_sites_emph_char=sites_emph_char,
                                                          f_fmt_clear=format_clear))
-            except:
-                for a in (probe_id,
-                          str(p_probe_properties[probe_id]['display_asn']),
-                          p_probe_properties[probe_id]['country_code'],
-                          p_probe_properties[probe_id]['display_address'],
-                          rt_a_fmt_chars,
-                          rt_a,
-                          rt_b_fmt_chars,
-                          rt_b,
-                          rt_diff_fmt_chars,
-                          rt_diff,
-                          rt_emph_char,
-                          sites_fmt_chars,
-                          sites_string,
-                          sites_emph_char,
-                          format_clear):
-                    sys.stderr.write(str(a) + ' | ')
-                sys.stderr.write('\n')
+            # except:
+            #     sys.stderr.write("There is something unexpected in this probe info: ")
+            #     for a in (probe_id,
+            #               str(p_probe_properties[probe_id]['display_asn']),
+            #               p_probe_properties[probe_id]['country_code'],
+            #               p_probe_properties[probe_id]['display_address'],
+            #               rt_a_fmt_chars,
+            #               rt_a,
+            #               rt_b_fmt_chars,
+            #               rt_b,
+            #               rt_diff_fmt_chars,
+            #               rt_diff,
+            #               rt_emph_char,
+            #               sites_fmt_chars,
+            #               sites_string,
+            #               sites_emph_char,
+            #               format_clear):
+            #         sys.stderr.write(str(a) + ' | ')
+            #     sys.stderr.write('\n')
