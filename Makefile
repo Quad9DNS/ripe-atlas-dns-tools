@@ -1,8 +1,8 @@
 #
 # Makefile for sysadmin tasks associated with johan's ripe-atlas-dns-tools
 
-# The RIPE Atlas packages required at least version 3.8 of python
-PYTHON3 = /opt/local/bin/python3.8
+# The RIPE Atlas packages required at least version 3.6 of python
+PYTHON3 = /opt/local/bin/python3
 
 # The directory to install the scripts in
 INSTALL_DIR = ${HOME}/ripe-atlas-dns-tool
