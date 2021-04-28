@@ -3,7 +3,7 @@
 set -e -u
 
 _required_major_version=3
-_required_minor_version=8
+_required_minor_version=6
 
 HOST=`uname -n`
 ME=`basename $0`
