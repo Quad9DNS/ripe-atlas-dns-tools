@@ -28,7 +28,7 @@ install: ra-dns-check.py
 	mkdir -p $(INSTALL_DIR)
 	install -m 555 ra-dns-check.py $(INSTALL_DIR)
 	@echo "\nra-dns-check.py was installed in: $(INSTALL_DIR)/"
-	@echo "To install the python libs it requiremes choose ONE of:"
+	@echo "\nTo install the python dependencies choose ONE of:"
 	@echo " A) Run it in a python venv by executing ra-dns-check.sh:  make venv"
 	@echo " B) To use ra-dns-check.py directly without a venv:  make install-pydeps"
 
