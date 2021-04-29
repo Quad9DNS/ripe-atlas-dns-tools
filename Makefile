@@ -2,7 +2,7 @@
 # Makefile for sysadmin tasks associated with johan's ripe-atlas-dns-tools
 
 # The RIPE Atlas packages required at least version 3.6 of python
-PYTHON3 = /opt/local/bin/python3
+PYTHON3 = python3
 
 # The directory to install the scripts in
 INSTALL_DIR = ${HOME}/ripe-atlas-dns-tool
@@ -12,6 +12,9 @@ PYTHON_VENV_DIR = ${INSTALL_DIR}/py-venv
 
 # Sometimes this might need to be just "pip"
 PIP = pip3
+
+help:
+	mdcat README.md || cat README.md
 
 # A wrapper script to run the real ra-dns-check.py within a python venv
 ra-dns-check.sh: ra-dns-check.sh.template
