@@ -2,8 +2,7 @@
 #
 # ra-dns-check.py, v2.2
 #
-# Parse, summarize, sort, and display measurement results for DNS queries
-# made by RIPE Atlas probes
+# Parse, summarize, sort, and display RIPE Atlast measurement results for DNS queries
 
 # Please see the file LICENSE for the license.
 
