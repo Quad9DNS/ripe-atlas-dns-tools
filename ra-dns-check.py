@@ -321,7 +321,7 @@ def is_valid_unixtime(_possible_unixtime):
 ##########
 # Try a few formats to convert the datetime string they've supplied into unxitime
 def user_datetime_to_valid_unixtime(user_dt_string):
-    accepted_datetime_formats = [ '%Y%m%d%H%M', '%Y%m%d_%H%M', '%Y%m%d_%H:%M',
+    accepted_datetime_formats = [ '%Y%m%d', '%Y%m%d%H%M', '%Y%m%d_%H%M', '%Y%m%d_%H:%M',
                              '%Y%m%d %H%M', '%Y%m%d %H:%M', '%Y-%m-%d_%H%M', '%Y-%m-%d_%H:%M',
                              '%Y-%m-%d-%H%M', '%Y-%m-%d-%H:%M']
     if is_valid_unixtime(user_dt_string):
@@ -430,30 +430,37 @@ if args[0].datetime2 != 'None':
 
 # Because this script is written to compare two measurement results, or
 # just report one, this is kinda complicated:
-# Set our last results set id
-# to the length of the data_sources list.  (It should be either 0 or 1,
-# but maybe this script will be modified to compare more than two sets of
-# data, so try not to block that...)  last_results_sets_id =
+#
+# Set our last results set id to the length of the data_sources list.  (It
+# should be either 0 or 1, but maybe this script will be modified to
+# compare more than two sets of data, so try not to block that...)
 
-# The args parsing setup should prevent this from happening, but just in case...
+# The args parsing setup should prevent this from happening, but just in
+# case, exit here if we have zero data sources.
 if len(data_sources) == 0:
     sys.stderr.write('Please supply one or two local filenames or RIPE Atlas Measurement IDs.\n')
     exit(3)
 # They've supplied one msm or file...
 elif len(data_sources) == 1:
     # ...so see how many timedates they supplied...
-    if (unixtimes[0] + unixtimes[1]) < 2:
-        # We have one data source and only one time...
+    if len(unixtimes) == 1:
+        # If we reach here, we have one data source and only one datetime,
+        # so only one set of results to show.
         last_results_set_id = 0
-    # We have one data source and two times...
-    else:
+    # We have one data source and two times?
+    elif len(unixtimes) == 2:
         # We set the second data source to be the same as the first,
         # otherwise the main loop would need logic to handle it being unset.
         data_sources.append(data_sources[0])
         last_results_set_id = 1
+    # Somehow we have two many datetimes, so exit!
+    else:
+        sys.stderr.write('Please supply no more than two date times instead of %d.\n' % len(unixtimes))
+        exit(3)
 # They supplied two data sources:
 elif len(data_sources) == 2:
     last_results_set_id = 1
+#
 #  They supplied something other than one or two data sources, which this script is not written to process.
 else:
     sys.stderr.write('Please supply one or two local filenames or RIPE Atlas Measurement IDs.\n')
@@ -466,7 +473,7 @@ else:
 # 'net from RIPE Atlas.
 #
 def process_request(_data_source, _results_set_id, _unixtime):
-    ### sys.stderr.write('Trying to access: %s\n' % _data_source)
+    ### sys.stderr.write('Trying to access data_source %s for unixtime %s\n' % (_data_source, _unixtime))
     # First we try to open the _data_source as a local file.  If it exists,
     # read in the measurement results from a filename the user has
     # supplied.
@@ -617,6 +624,7 @@ def process_request(_data_source, _results_set_id, _unixtime):
     m_response_times[_results_set_id].sort()
     m_timestamps[_results_set_id].sort()
     m_seen_probe_ids[_results_set_id].sort()
+    ### sys.stderr.write('m_seen_probe_ids[_results_set_id] is %d\n' % len(m_seen_probe_ids[_results_set_id]))
     return measurement_id
 
 # END def process_request
