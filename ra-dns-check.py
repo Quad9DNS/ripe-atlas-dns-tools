@@ -7,10 +7,11 @@
 # Please see the file LICENSE for the license.
 
 import argparse
-# need this to more safely parse config file
+# need ast to more safely parse config file
 import ast
 import configparser
 import json
+import logging
 import os
 import re
 import statistics
@@ -30,6 +31,11 @@ from ripe.atlas.cousteau import Measurement
 # for debugging
 from pprint import pprint
 
+logger = logging.getLogger(__name__)
+# Uncomment the next line if you want debugging-level logging before
+# command line options argparsing:
+### logger.setLevel('DEBUG')
+
 ###################
 #
 # Configurable settings
@@ -46,6 +52,9 @@ my_config_file = os.environ['HOME'] + '/.ra-dns-check.conf'
 # for the different data types (string, integer, boolean) because by
 # default, ConfigParser reads everything in as a string, but there are ways to read specific sections or values as int or bool.
 
+#
+# Valid log levels
+valid_log_levels = ['DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL']
 
 options_setup_dict_string = {
     'datetime1': {
@@ -54,6 +63,9 @@ options_setup_dict_string = {
     'datetime2': {
         'default': None,
         'help': 'date-time to start 10-minute period for SECOND set of results (UTC).\n;  Format: 1970-01-01_0000 OR the number of seconds since then (AKA "Unix time")'},
+    'log_level': {
+        'default': 'WARN',
+        'help': 'The level of logging (debugging) messages to show. One of:' + str(valid_log_levels) + ' (default is WARN)'},
     'split_char': {
         'default': '.',
         'help': 'character (delimiter) to split the string on (can occur in the string more than once.'},
@@ -178,6 +190,7 @@ for k in options_setup_dict_boolean.keys():
 #
 sample_config += "\n;;;;;;;;;;;;;;;;;;;;\n[INTEGER]\n"
 for k in options_setup_dict_integer.keys():
+    logger.debug('processing config item: %s' % k)
     sample_config += (';\n')
     sample_config += ('; ' + options_setup_dict_integer[k]['help'] + '\n')
     sample_config += (k + ' = ' + str(options_setup_dict_integer[k]['default']) + '\n')
@@ -191,20 +204,24 @@ raw_config = configparser.ConfigParser()
 try:
     if os.stat(my_config_file):
         if os.access(my_config_file, os.R_OK):
-            ### sys.stderr.write('Found config file at %s; reading it now...\n' % my_config_file)
+            logging.info('Found config file at %s; reading it now...\n' % my_config_file)
             raw_config.read(my_config_file)
         else:
-            sys.stderr.write('Config file exists at %s, but is not readable.\n' % my_config_file)
+            logger.critical('Config file exists at %s, but is not readable.\n' % my_config_file)
 except FileNotFoundError:
-    ### sys.stderr.write('Config file does not exist at %s; creating new one...\n' % my_config_file)
+    logger.info('Config file does not exist at %s; creating new one...\n' % my_config_file)
     raw_config.read_string(sample_config)
     with open(my_config_file, 'w') as cf:
         cf.write(sample_config)
 
-### print(raw_config.sections())
+### logger.debug(raw_config.sections())
 raw_config_string = raw_config['STRING']
+### logger.debug(raw_config.options('STRING'))
 raw_config_boolean = raw_config['BOOLEAN']
+### logger.debug(raw_config.options('BOOLEAN'))
 raw_config_integer = raw_config['INTEGER']
+### logger.debug(raw_config.options('INTEGER'))
+
 #
 # Loop through what's in config and see if each variable is in the
 # (following) list of expected config variables, so we can catch any
@@ -213,28 +230,29 @@ raw_config_integer = raw_config['INTEGER']
 # unnoticed.
 config = {}
 for item in raw_config_string:
-    ### print(item)
+    logger.debug(item)
     if item not in expected_config_items:
-        sys.stderr.write('Unknown parameter in config file: %s\n' % item)
+        logger.critical('Unknown parameter in config file: %s\n' % item)
         exit(1)
     else:
         config[item] = raw_config_string[item]
-        ###print(item + config[item])
+        logger.debug(item + str(config[item]))
 for item in raw_config_boolean:
     if item not in expected_config_items:
-        sys.stderr.write('Unknown parameter in config file: %s\n' % item)
+        logger.critical('Unknown parameter in config file: %s\n' % item)
         exit(1)
     else:
         config[item] = raw_config_boolean.getboolean(item)
-        ###print(item + str(config[item]))
+        logger.debug(item + str(config[item]))
 for item in raw_config_integer:
-    ### print(item)
+    logger.debug(item)
     if item not in expected_config_items:
-        sys.stderr.write('Unknown parameter in config file: %s\n' % item)
+        logger.critical('Unknown parameter in config file: %s\n' % item)
         exit(1)
     else:
         config[item] = raw_config_integer.getint(item)
-        ###print(item + str(config[item]))
+        logger.debug(item + str(config[item]))
+
 # What we get from configparser is a string, so we need to convert it to a list.
 # (ast.literal_eval() is safer than plain eval())
 probe_properties_to_report = ast.literal_eval(config['probe_properties_to_report'])
@@ -280,6 +298,7 @@ parser.add_argument('-e', '--emphasis_chars', help=options_setup_dict_boolean['e
 parser.add_argument('-H', '--no_header', help=options_setup_dict_boolean['no_header']['help'], action="store_true", default=config['no_header'])
 parser.add_argument('-i', '--dns_response_item_occurence_to_return', help=options_setup_dict_integer['dns_response_item_occurence_to_return']['help'], type=int, default=config['dns_response_item_occurence_to_return'])
 parser.add_argument('-l', '--latency_diff_threshold', help=options_setup_dict_integer['latency_diff_threshold']['help'], type=int, default=config['latency_diff_threshold'])
+parser.add_argument('--log_level', help=options_setup_dict_string['log_level']['help'], type=str, default=config['log_level'], choices=valid_log_levels)
 parser.add_argument('-P', '--do_not_list_probes', help=options_setup_dict_boolean['do_not_list_probes']['help'], action='store_true', default=config['do_not_list_probes'])
 parser.add_argument('-r', '--raw_probe_properties_file_max_age', help=options_setup_dict_integer['raw_probe_properties_file_max_age']['help'], type=int, default=config['raw_probe_properties_file_max_age'])
 parser.add_argument('-s', '--list_slow_probes_only', help=options_setup_dict_boolean['list_slow_probes_only']['help'], action='store_true', default=config['list_slow_probes_only'])
@@ -289,9 +308,10 @@ parser.add_argument('-u', '--print_summary_stats', help=options_setup_dict_boole
 parser.add_argument('filename_or_msmid', help='one or two local filenames or RIPE Atlas Measurement IDs', nargs='+')
 parser.format_help()
 args = parser.parse_known_args()
-### print (args[0]) ### debug
-### print (args[0].split_char) ### debug
-###exit()
+
+logger.setLevel(args[0].log_level)
+### logger.debug('parsed args: '+ str(args[0]))
+### exit()
 
 # Put the remaining command line arguments into a list to process as files
 # or measurement IDs.
@@ -315,7 +335,7 @@ def is_valid_unixtime(_possible_unixtime):
     if isinstance(_possible_unixtime, int) and int(_possible_unixtime) < current_unixtime and int(_possible_unixtime) >= oldest_result_unixtime:
         return True
     else:
-        ### sys.stderr.write(str(_possible_unixtime) + ' is not inbetween ' + str(oldest_result_unixtime) + ' and ' + str(current_unixtime) + '.\n')
+        logger.debug(str(_possible_unixtime) + ' is not inbetween ' + str(oldest_result_unixtime) + ' and ' + str(current_unixtime) + '.\n')
         return False
 
 ##########
@@ -324,20 +344,23 @@ def user_datetime_to_valid_unixtime(user_dt_string):
     accepted_datetime_formats = [ '%Y%m%d', '%Y%m%d%H%M', '%Y%m%d_%H%M', '%Y%m%d_%H:%M',
                              '%Y%m%d %H%M', '%Y%m%d %H:%M', '%Y-%m-%d_%H%M', '%Y-%m-%d_%H:%M',
                              '%Y-%m-%d-%H%M', '%Y-%m-%d-%H:%M']
+    # First, check to see if what's supplied is a valid-looking integer
+    # representation of a reasonable unix time (seconds since the
+    # the 1 Jan 1970 Epoch)
     if is_valid_unixtime(user_dt_string):
         return int(user_dt_string)
-    # try to convert from a few similar formats
+    # It's not unix time, so try to convert from some data time formats
     for f in accepted_datetime_formats:
         try:
             # print (user_dt_string + ' / ' + f)
             _unixtime_candidate = int(time.mktime(time.strptime(user_dt_string, f)))
             if is_valid_unixtime(_unixtime_candidate):
-                ### sys.stderr.write('Accepted %i as valid unixtime.\n' % _unixtime_candidate)
+                logger.debug('Accepted %i as valid unixtime.\n' % _unixtime_candidate)
                 return (_unixtime_candidate)
         except ValueError:
             ...
     # If fall out the bottom of the (above) for loop, then we do not have a valid time
-    sys.stderr.write('Cannot validate "' + user_dt_string + '" as a date-time respresentation\n')
+    logger.critical('Cannot validate "' + user_dt_string + '" as a date-time respresentation\n')
     exit(2)
 
 # A list that might contain the user-supplied time period durations
@@ -438,7 +461,7 @@ if args[0].datetime2 != 'None':
 # The args parsing setup should prevent this from happening, but just in
 # case, exit here if we have zero data sources.
 if len(data_sources) == 0:
-    sys.stderr.write('Please supply one or two local filenames or RIPE Atlas Measurement IDs.\n')
+    logger.critical('Please supply one or two local filenames or RIPE Atlas Measurement IDs.\n')
     exit(3)
 # They've supplied one msm or file...
 elif len(data_sources) == 1:
@@ -455,7 +478,7 @@ elif len(data_sources) == 1:
         last_results_set_id = 1
     # Somehow we have two many datetimes, so exit!
     else:
-        sys.stderr.write('Please supply no more than two date times instead of %d.\n' % len(unixtimes))
+        logger.critical('Please supply no more than two date times instead of %d.\n' % len(unixtimes))
         exit(3)
 # They supplied two data sources:
 elif len(data_sources) == 2:
@@ -463,7 +486,7 @@ elif len(data_sources) == 2:
 #
 #  They supplied something other than one or two data sources, which this script is not written to process.
 else:
-    sys.stderr.write('Please supply one or two local filenames or RIPE Atlas Measurement IDs.\n')
+    logger.critical('Please supply one or two local filenames or RIPE Atlas Measurement IDs.\n')
     exit(3)
 
 
@@ -473,7 +496,7 @@ else:
 # 'net from RIPE Atlas.
 #
 def process_request(_data_source, _results_set_id, _unixtime):
-    ### sys.stderr.write('Trying to access data_source %s for unixtime %s\n' % (_data_source, _unixtime))
+    logger.info('Trying to access data_source %s for unixtime %s\n' % (_data_source, _unixtime))
     # First we try to open the _data_source as a local file.  If it exists,
     # read in the measurement results from a filename the user has
     # supplied.
@@ -486,9 +509,9 @@ def process_request(_data_source, _results_set_id, _unixtime):
         results = json.load(f)
         f.close()
         if _unixtime != 0:
-            sys.stderr.write('This script does not yet know how to read user-supplied time ranges out of local files.\n (But it can query the RIPE Atlas API for time ranges, so maybe you wanna do that instead?\n')
+            logger.critical('This script does not yet know how to read user-supplied time ranges out of local files.\n (But it can query the RIPE Atlas API for time ranges, so maybe you wanna do that instead?\n')
     except:
-        ### sys.stderr.write('cannot read from file: %s\n' % _data_source)
+        logger.debug('cannot read from file: %s\n' % _data_source)
         # If we are here, accessing _data_sources as a local file did not
         # work.  Next, we try to check to see if _data_source is an 8-digit
         # number.  If it is, then we assume it is an Atlas Measurement ID
@@ -505,7 +528,7 @@ def process_request(_data_source, _results_set_id, _unixtime):
                 kwargs = {
                     "msm_id": measurement_id
                 }
-                ### sys.stderr.write('Fetching latest results for Measurement %i from RIPE Atlas API...\n' % measurement_id)
+                logger.info('Fetching latest results for Measurement %i from RIPE Atlas API...\n' % measurement_id)
                 is_success, results = AtlasLatestRequest(**kwargs).create()
             # We have a unixtime, so:
             # * use it as a start time
@@ -519,13 +542,13 @@ def process_request(_data_source, _results_set_id, _unixtime):
                     "start": _unixtime,
                     "stop": _stop_time
                 }
-                ### sys.stderr.write('Fetching results for Measurement %i,  start unixtime: %s  stop unixtime: %s\n' % (measurement_id, _unixtime, _stop_time))
+                logger.info('Fetching results for Measurement %i,  start unixtime: %s  stop unixtime: %s\n' % (measurement_id, _unixtime, _stop_time))
                 is_success, results = AtlasResultsRequest(**kwargs).create()
             if not is_success:
-                sys.stderr.write('Request of ' + _data_source + 'from RIPE Atlas failed.\n')
+                logger.critical('Request of ' + _data_source + 'from RIPE Atlas failed.\n')
                 exit(11)
         else:
-            sys.stderr.write('Cannot read from ' + _data_source + ' and it does look like a RIPE Atlas Measurement ID\n')
+            logger.critical('Cannot read from ' + _data_source + ' and it does look like a RIPE Atlas Measurement ID\n')
             sys.exit(12)
 
     # Variables that start with a m_ are specific to measurements.
@@ -603,7 +626,7 @@ def process_request(_data_source, _results_set_id, _unixtime):
                 # Split up the response text
                 if args[0].split_char == '!':
                     split_result = dns_server_fqdn
-                    ### sys.stderr.write('%s\n' % (dns_server_fqdn))
+                    logger.debug('%s\n' % (dns_server_fqdn))
                 else:
                     split_result = dns_server_fqdn.split(args[0].split_char)
                     if len(split_result) > args[0].dns_response_item_occurence_to_return:
@@ -616,15 +639,15 @@ def process_request(_data_source, _results_set_id, _unixtime):
                 pm_dns_server_substring[results_and_probes_id] = 'no_data'
 
     measurement = Measurement(id=measurement_id)
-    ### print(dir(measurement))
+    logger.debug(dir(measurement))
     m_ip_version[_results_set_id] = int(measurement.protocol)
-    ### sys.stderr.write("Address family for measurement %i is %i\n" % (measurement_id, m_ip_version[_results_set_id]))
+    logger.debug("Address family for measurement %i is %i\n" % (measurement_id, m_ip_version[_results_set_id]))
 
     # Sort some of the lists of results
     m_response_times[_results_set_id].sort()
     m_timestamps[_results_set_id].sort()
     m_seen_probe_ids[_results_set_id].sort()
-    ### sys.stderr.write('m_seen_probe_ids[_results_set_id] is %d\n' % len(m_seen_probe_ids[_results_set_id]))
+    logger.debug('m_seen_probe_ids[_results_set_id] is %d\n' % len(m_seen_probe_ids[_results_set_id]))
     return measurement_id
 
 # END def process_request
@@ -666,13 +689,13 @@ def check_update_probe_properties_cache_file(pprf, ppcf, ppurl):
     try:
         ppcf_statinfo = os.stat(ppcf)
         ppcf_age = int(ppcf_statinfo.st_mtime)
-        ### sys.stderr.write('Reading in existing local JSON cache file %s...\n' % ppcf)
+        logger.info('Reading in existing local JSON cache file %s...\n' % ppcf)
         with open(ppcf, 'r') as f:
             all_probes_dict = json.load(f)
     except:
         # The cache file does not seem to exist, so set the age to
         # zero, to trigger rebuild.
-        ### sys.stderr.write('Local JSON cache file %s does not exist; generating it.\n' % ppcf)
+        logger.info('Local JSON cache file %s does not exist; generating it.\n' % ppcf)
         ppcf_age = -1
 
     try:
@@ -689,12 +712,12 @@ def check_update_probe_properties_cache_file(pprf, ppcf, ppurl):
     if ((current_unixtime - pprf_age) > int(config['raw_probe_properties_file_max_age'])):
         # Fetch a new raw file, and generate the JSON format cache file
         try:
-            ### sys.stderr.write ('%s is out of date, so trying to fetch fresh probe data from RIPE...\n' % pprf)
+            logger.info ('%s is out of date, so trying to fetch fresh probe data from RIPE...\n' % pprf)
             urlretrievefilename, headers = urllib.request.urlretrieve(ppurl, filename=pprf)
             html = open(pprf)
             html.close()
         except:
-            sys.stderr.write('Cannot urlretrieve %s -- continuing without updating %s \n' %
+            logger.critical('Cannot urlretrieve %s -- continuing without updating %s \n' %
              (ppurl, pprf))
             os.replace(pprf + '.old', pprf)
             return(2)
@@ -705,23 +728,24 @@ def check_update_probe_properties_cache_file(pprf, ppcf, ppurl):
         try:
             all_probes_list = json.loads(bz2.BZ2File(pprf).read().decode()).get('objects')
         except:
-            sys.stderr.write ('Cannot read raw probe data from file: %s\n' % pprf)
+            logger.critical ('Cannot read raw probe data from file: %s\n' % pprf)
             return(1)
             # What we end up with in all_probes_list is a python list, but a
             # dictionary would be much more efficient keyed on the probe id would
             # be much more efficient, so we're going to burn some electricity and
             # convert the list into a dictionary.
-        ### sys.stderr.write ('Converting the RIPE Atlas probe data into a dictionary and indexing it...\n')
+        logger.info ('Converting the RIPE Atlas probe data into a dictionary and indexing it...\n')
         while len(all_probes_list) > 0:
             probe_info = all_probes_list.pop()
             probe_id = str(probe_info['id'])
             all_probes_dict[probe_id] = probe_info
-            ### pprint (all_probes_dict.keys())
+            logger.debug('Seen probe IDs: ')
+            logger.debug(all_probes_dict.keys())
         # now save that dictionary as a JSON file...
-        ### sys.stderr.write ('Saving the probe data dictionary as a JSON file at %s...\n' % ppcf)
+        logger.info ('Saving the probe data dictionary as a JSON file at %s...\n' % ppcf)
         with open(ppcf, 'w') as f:
             json.dump(all_probes_dict, f)
-    ### sys.stderr.write('%s does not need to be updated.\n' % pprf)
+    logger.info('%s does not need to be updated.\n' % pprf)
     return(0)
 #
 # END def check_update_probe_properties_cache_file
@@ -740,25 +764,24 @@ def load_probe_properties(probe_ids, ppcf):
     matched_probe_info = {}
     all_probes_dict = {}
     #
-    ### sys.stderr.write ('Reading the probe data dictionary as a JSON file from %s...\n' % ppcf)
+    logger.info ('Reading the probe data dictionary as a JSON file from %s...\n' % ppcf)
     try:
         with open(ppcf, 'r') as f:
             all_probes_dict = json.load(f)
     except:
-        sys.stderr.write ('Cannot read probe data from file: %s\n' % ppcf)
+        logger.critical ('Cannot read probe data from file: %s\n' % ppcf)
         exit(13)
     # Loop through the list of supplied (seen) probe ids and collect their
     # info/meta data from either our local file or the RIPE Atlas API
-    ### sys.stderr.write ('Matching seen probes with probe data; will query RIPE Atlas API for probe info not in local cache...\n')
+    logger.info ('Matching seen probes with probe data; will query RIPE Atlas API for probe info not in local cache...\n')
     for p in probe_ids:
-        ### sys.stderr.write ('Searching for info about probe %9s ... ' % p)
         if p in all_probes_dict.keys():
             probe_cache_hits += 1
-            ### sys.stderr.write ('FOUND in local cache.\n')
+            logger.debug('Probe %s info found in local cache.' % p)
             matched_probe_info[p] = all_probes_dict[p]
         else:
             # If it's not in the cache file, request it from RIPE
-            #### sys.stderr.write ('NOT cached, trying RIPE Atlas...')
+            #logger.debug ('NOT cached, trying RIPE Atlas...')
             try:
                 ripe_result = Probe(id=p)
                 #
@@ -769,18 +792,17 @@ def load_probe_properties(probe_ids, ppcf):
                                          'address_v6':  ripe_result.address_v6}
                 probe_cache_misses += 1
                 all_probes_dict[p] = matched_probe_info[p]
-                ### sys.stderr.write (' success!\n')
+                logger.debug('Probe %9s info fetched from RIPE' % p)
             except:
                 # Otherwise, it's empty
-                ### sys.stderr.write (' fail :(\n')
                 # we did not find any information about the probe, so set values to '-'
                 matched_probe_info[p] = { 'asn_v4': '-',
                                           'asn_v6': '-',
                                           'country_code': '-',
                                           'address_v4': '-',
                                           'address_v6': '-' }
-                ### sys.stderr.write ('Could not get info about probe ID %s in the local cache or from RIPE Atlas API \n' % p)
-    ### sys.stderr.write ('cache hits: %i   cache misses: %i.\n' % (probe_cache_hits, probe_cache_misses))
+                logger.debug('Failed to get info about probe ID %s in the local cache or from RIPE Atlas API.' % p)
+    logger.info('cache hits: %i   cache misses: %i.\n' % (probe_cache_hits, probe_cache_misses))
     # Write out the local JSON cache file
     with open(ppcf, mode='w') as f:
         json.dump(all_probes_dict, f)
@@ -796,7 +818,7 @@ def load_probe_properties(probe_ids, ppcf):
 while results_set_id <= last_results_set_id:
 #for t in data_sources:
     # m will receive the measurment ID for the processed data source
-    ### sys.stderr.write('data_source: %s  results_set_id: %i  unixtime: %i\n' % (data_sources[results_set_id], results_set_id, unixtimes[results_set_id]))
+    logger.debug('data_source: %s  results_set_id: %i  unixtime: %i\n' % (data_sources[results_set_id], results_set_id, unixtimes[results_set_id]))
     m = process_request(data_sources[results_set_id], results_set_id, unixtimes[results_set_id])
     measurement_ids.append(m)
     ######
@@ -840,17 +862,16 @@ while results_set_id <= last_results_set_id:
 # Default IP version to expect is 4
 report_ip_version = 4
 if last_results_set_id > 0:
-    ### print (m_seen_probe_ids_set[0])
-    ### print (m_seen_probe_ids_set[1])
+    logger.debug('Seen probe IDs set 0: ')
+    logger.debug(m_seen_probe_ids_set[0])
+    logger.debug('\nSeen probe IDs set 1: ')
+    logger.debug(m_seen_probe_ids_set[1])
     if m_seen_probe_ids_set[0].isdisjoint(m_seen_probe_ids_set[1]):
-        sys.stderr.write('The two sets of measurement results do not have any probes in common.\n')
-        sys.stderr.write('Set 0: ')
-        for p in m_seen_probe_ids_set[0]:
-            sys.stderr.write(p + ' ')
-        sys.stderr.write('\nSet 1: ')
-        for p in m_seen_probe_ids_set[1]:
-            sys.stderr.write(p + ' ')
-        sys.stderr.write('\n')
+        logger.critical('The two sets of measurement results do not have any probes in common.')
+        logger.critical('Set 0: ')
+        logger.critical(m_seen_probe_ids_set[0])
+        logger.critical('\nSet 1: ')
+        logger.critical(m_seen_probe_ids_set[1])
         exit(14)
     # if there are probes in common, build a uniq set of all probe ids
     # seen in both sets of measurements, and a list of common probe IDs
@@ -867,7 +888,7 @@ if last_results_set_id > 0:
     # - warn the user if the versions are different, and set the display data to be v4 (default is above)
     # - otherwise, display the data common version
     if m_ip_version[0] != m_ip_version[1]:
-        sys.stderr.write('WARNING: Measurements %i and %i were made for two different address families: %i vs. %i.\n  Only v4 probe info (ASN, IP address) will be displayed.\n'
+        logger.critical('WARNING: Measurements %i and %i were made for two different address families: %i vs. %i.\n  Only v4 probe info (ASN, IP address) will be displayed.\n'
                          % (measurement_ids[0], measurement_ids[1], m_ip_version[0], m_ip_version[1]))
     else:
         report_ip_version = m_ip_version[0]
@@ -894,7 +915,7 @@ if not args[0].do_not_list_probes:
                                                      config['ripe_atlas_probe_properties_json_cache_file'],
                                                      config['ripe_atlas_current_probe_properties_url'])
     if _res != 0:
-        sys.stderr.write('Unexpected result when updating local cache files: %s\n' % _res)
+        logger.critical('Unexpected result when updating local cache files: %s' % _res)
     p_probe_properties = load_probe_properties(probe_ids_to_list,
                                        config['ripe_atlas_probe_properties_json_cache_file'])
     if not args[0].no_header:
@@ -902,7 +923,7 @@ if not args[0].do_not_list_probes:
         # Set the header labels based on what we're comparing (msm_ids or dates)
         #  If there are two dates, we want those as the header labels
         if args[0].datetime2 != None:
-            ### print ('hasattr datetime2')
+            logger.debug('hasattr datetime2')
             header_label[0] = str(args[0].datetime1) + '(ms)'
             header_label[1] = str(args[0].datetime2) + '(ms)'
         #  Otherwise, if there are two msm_ids, we want those as the header labels
@@ -919,7 +940,7 @@ if not args[0].do_not_list_probes:
     elif report_ip_version == 6:
         address_width = 39
     else:
-        sys.stderr.write('Do not know what to set address width for IP version %i.\n' % report_ip_version)
+        logger.critical('Do not know what to set address width for IP version %i.' % report_ip_version)
         address_width = 0
     # Build the formatted-output per-probe and header lines from the list of (user-configurable) properties.
     for pp in probe_properties_to_report:
@@ -971,7 +992,7 @@ if not args[0].do_not_list_probes:
             fmt_string_a = 'f_sites_fmt_chars:s}{f_' + pp
             fmt_string_b = '15s}{f_sites_emph_char:s}{f_fmt_clear:s'
         else:
-            sys.stderr.write('Unknown probe paramter: %s\n' % pp)
+            logger.critical('Unknown probe paramter: %s' % pp)
         probe_detail_line_format_string += '{' + fmt_string_a + ':' + fmt_string_b + '} '
     #
     probe_detail_line_format_string += '{f_fmt_clear:s}'
@@ -981,16 +1002,13 @@ if not args[0].do_not_list_probes:
         header_string = ''
         for align, text in zip(header_format, header_words):
             header_string += (align.format(text) + ' ')
-        sys.stderr.write(header_string + '\n')
-        sys.stderr.write('-' * len(header_string) + '\n')
+        logger.critical(header_string)
+        logger.critical('-' * len(header_string))
     # Iterate over the list of probe ids to lis, then print out the
     # results per result set.
-    ### print (probe_ids_to_list)
-    ### print(probe_detail_line_format_string)
+    logger.debug('Probes to list: ' + str(probe_ids_to_list))
+    logger.debug('Probes detail line format string: ' + probe_detail_line_format_string)
     for probe_id in probe_ids_to_list:
-        #if probe_id is None:
-        #    break
-        ### print('{f_probe_id:s}'.format(f_probe_id=probe_id))
         #
         # Prepare what will be printed based on result set.
         # Probes can have v4 or v6 ASNs and IP addresses.  By default we show v4, unless BOTH measurements were v6
@@ -1005,7 +1023,6 @@ if not args[0].do_not_list_probes:
             p_probe_properties[probe_id]['display_address'] = '-'
         if p_probe_properties[probe_id]['country_code'] is None:
             p_probe_properties[probe_id]['country_code'] = '-'
-        ### print(probe_id, p_probe_properties[probe_id]['display_address'])
         # generate an response_set + probe_id to use as an index into
         # various dicts with responses
         results_and_probes_id = str(0) + '-' + str(probe_id)
@@ -1075,8 +1092,8 @@ if not args[0].do_not_list_probes:
                 else:
                     sites_fmt_chars = fmt.clear
                 format_clear = fmt.clear
-            # try:
-            print(probe_detail_line_format_string.format(f_probe_id=probe_id,
+            try:
+                print(probe_detail_line_format_string.format(f_probe_id=probe_id,
                                                          f_asn=str(p_probe_properties[probe_id]['display_asn']),
                                                          f_country_code=p_probe_properties[probe_id]['country_code'],
                                                          f_ip_address=p_probe_properties[probe_id]['display_address'],
@@ -1091,22 +1108,22 @@ if not args[0].do_not_list_probes:
                                                          f_dns_response=sites_string,
                                                          f_sites_emph_char=sites_emph_char,
                                                          f_fmt_clear=format_clear))
-            # except:
-            #     sys.stderr.write("There is something unexpected in this probe info: ")
-            #     for a in (probe_id,
-            #               str(p_probe_properties[probe_id]['display_asn']),
-            #               p_probe_properties[probe_id]['country_code'],
-            #               p_probe_properties[probe_id]['display_address'],
-            #               rt_a_fmt_chars,
-            #               rt_a,
-            #               rt_b_fmt_chars,
-            #               rt_b,
-            #               rt_diff_fmt_chars,
-            #               rt_diff,
-            #               rt_emph_char,
-            #               sites_fmt_chars,
-            #               sites_string,
-            #               sites_emph_char,
-            #               format_clear):
-            #         sys.stderr.write(str(a) + ' | ')
-            #     sys.stderr.write('\n')
+            except:
+                logger.debug("There is something unexpected in this probe info: ")
+                for a in (probe_id,
+                          str(p_probe_properties[probe_id]['display_asn']),
+                          p_probe_properties[probe_id]['country_code'],
+                          p_probe_properties[probe_id]['display_address'],
+                          rt_a_fmt_chars,
+                          rt_a,
+                          rt_b_fmt_chars,
+                          rt_b,
+                          rt_diff_fmt_chars,
+                          rt_diff,
+                          rt_emph_char,
+                          sites_fmt_chars,
+                          sites_string,
+                          sites_emph_char,
+                          format_clear):
+                    logger.debug(' ' + str(a))
+
