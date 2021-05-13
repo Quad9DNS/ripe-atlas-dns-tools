@@ -31,10 +31,13 @@ from ripe.atlas.cousteau import Measurement
 # for debugging
 from pprint import pprint
 
-logger = logging.getLogger(__name__)
-# Uncomment the next line if you want debugging-level logging before
-# command line options argparsing:
-### logger.setLevel('DEBUG')
+#
+# Valid log levels
+valid_log_levels = ['DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL']
+
+# Change "CRITICAL" to DEBUG if you want debugging-level logging *before* this
+# script parses command line args, and subsequently sets the debug level:
+logging.basicConfig(level=logging.CRITICAL)
 
 ###################
 #
@@ -50,75 +53,20 @@ my_config_file = os.environ['HOME'] + '/.ra-dns-check.conf'
 # These are dictionaries we'll iterate over to generate the config text,
 # including a Big Blurb o' Help.  There are three different dictionaries
 # for the different data types (string, integer, boolean) because by
-# default, ConfigParser reads everything in as a string, but there are ways to read specific sections or values as int or bool.
+# default, ConfigParser reads everything in as a string, but there are
+# ways to read specific sections or values as int or bool.
+
+# A list of "legal" probe properties that can be reported.
+reportable_probe_properties = ['probe_id', 'asn', 'country_code', 'ip_address', 'rt_a', 'rt_b', 'rt_diff', 'dns_response']
 
 #
-# Valid log levels
-valid_log_levels = ['DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL']
-
-options_setup_dict_string = {
-    'datetime1': {
-        'default': None,
-        'help': 'date-time to start 10-minute period for FIRST set of results (UTC).\n; Format: 1970-01-01_0000 OR the number of seconds since then (AKA "Unix time")'},
-    'datetime2': {
-        'default': None,
-        'help': 'date-time to start 10-minute period for SECOND set of results (UTC).\n;  Format: 1970-01-01_0000 OR the number of seconds since then (AKA "Unix time")'},
-    'log_level': {
-        'default': 'WARN',
-        'help': 'The level of logging (debugging) messages to show. One of:' + str(valid_log_levels) + ' (default is WARN)'},
-    'split_char': {
-        'default': '.',
-        'help': 'character (delimiter) to split the string on (can occur in the string more than once.'},
-
-}
-options_setup_dict_boolean = {
-    'all_probes': {
-        'default': False,
-        'help': 'show information for probes presnt in *either* result sets, not just those present in *both* sets'},
-    'color': {
-        'default': True,
-        'help': 'colorize output'},
-    'no_color': {
-        'default': False,
-        'help': 'do NOT colorized output (AKA "colourised output")'},
-    'emphasis_chars': {
-        'default': False,
-        'help': 'add a trailing char (! or *) to abberant sites and response times'},
-    'no_header': {
-        'default': False,
-        'help': 'Do NOT show the header above the probe list'},
-    'do_not_list_probes': {
-        'default': False,
-        'help': 'do NOT list the results for each probe'},
-    'list_slow_probes_only': {
-        'default': False,
-        'help': 'in per-probe list,show ONLY the probes reporting response times'},
-    'print_summary_stats': {
-        'default': False,
-        'help': 'show summary stats'}
-}
-options_setup_dict_integer = {
-    'dns_response_item_occurence_to_return': {
-        'default': 1,
-        'help': 'Which item to return from the split-list. First element is 0.'},
-    'latency_diff_threshold': {
-        'default': 5,
-        'help': 'the amount of time difference (ms) that is significant when comparing latencies bewtween tests'},
-    'slow_threshold': {
-        'default': 50,
-        'help': 'Response times (ms) larger thatn this trigger color highlighting.'},
-    'raw_probe_properties_file_max_age': {
-        'default': 86400,
-        'help': 'The max age of the RIPE Atlas probe info file. (older than this and we download a new one)'}
-}
+# Comment header (help) for the config file. If the config file does not
+# exist, this script creates it from this string plus the preceding
+# options_sample_dict_* dicts.
 #
-# There are some defaults defined in the "sample_config" string below, but
-# you should edit them in the config file instead of bellow.
-# (If the config file does not exist, this script creates it from this string.)
+# Options specified in the config file can then also be overridden by what's specified on the command line.
 #
-# Options specified in the command line can then also be overridden by what's specified on the command line.
-#
-sample_config = """;
+sample_config_string_header = """;
 ; Config file for ra-dns-check.py
 ;
 ; This file is automatically created if it does not exist.
@@ -145,115 +93,241 @@ sample_config = """;
 ;
 ; 3) Keep the key-value pairs in the approriate section for their type:
 ;    string, boolean, or integer.
-
+;
 ;;;;;;;;;;;;;;;;;;;;
-[STRING]
-;
-; Wikipedia says 2010 was when RIPE Atlas was established, so we use that
-; as a starting point for when it might contain some data.
-oldest_atlas_result_datetime = 2010 01 01 00:00:00
-;
-; There are a couple of files used to locally cache probe data, the first comes directly from RIPE:
-ripe_atlas_probe_properties_raw_file = """ + os.environ['HOME'] + '/.RIPE_atlas_all_probe_properties.bz2' + """
-;
-; the second cache file we generate, based upon probe info we request (one at a time) from the RIPE Atlas API.
-ripe_atlas_probe_properties_json_cache_file = """ + os.environ['HOME'] + '/.RIPE_atlas_probe_properties_cache_file.json' + """
-;
-; where to fetch the RA probe properties file
-ripe_atlas_current_probe_properties_url = https://ftp.ripe.net/ripe/atlas/probes/archive/meta-latest
-;
-; The ordered list of properties to display in the (default) detailed listing per probe.
-probe_properties_to_report = ['probe_id', 'asn', 'country_code',
-                               'ip_address', 'rt_a', 'rt_b', 'rt_diff', 'dns_response']
 """
-# List of the config paramaters from the initial text above ^.
-# (It will be appended to using subsequent for loops to read through options dictionaries.)
-expected_config_items =['oldest_atlas_result_datetime',
-                        'ripe_atlas_probe_properties_raw_file',
-                        'ripe_atlas_probe_properties_json_cache_file',
-                        'ripe_atlas_current_probe_properties_url',
-                        'probe_properties_to_report']
-# Iterate over the items in the options_setup_dict (defined above)
-# These are the options that can be specified in the config file OR on the command line.
-for k in options_setup_dict_string.keys():
-    sample_config += (';\n')
-    sample_config += ('; ' + options_setup_dict_string[k]['help'] + '\n')
-    sample_config += (k + ' = ' + str(options_setup_dict_string[k]['default']) + '\n')
+
+# Define variable-type-specific sections of the config.
+# The reasons we have these sections:
+# 1) Python's ConfigParser module requires at least one section.
+# 2) ConfigParser reads in all of the config values as strings.  So by
+#    grouping them by type in the config, it's easier "up front" to loop
+#    through and cast them to the correct types, and then not worry about
+#    remembering to do the cases later as they get used.
+
+options_sample_dict_string = {
+    'datetime1': {
+        'default': None,
+        'help': 'date-time to start 10-minute period for FIRST set of results (UTC).\n; Format: 1970-01-01_0000 OR the number of seconds since then (AKA "Unix time")'},
+    'datetime2': {
+        'default': None,
+        'help': 'date-time to start 10-minute period for SECOND set of results (UTC).\n;  Format: 1970-01-01_0000 OR the number of seconds since then (AKA "Unix time")'},
+    'log_level': {
+        'default': 'WARN',
+        'help': 'The level of logging (debugging) messages to show. One of:' + str(valid_log_levels) + ' (default is WARN)'},
+    'oldest_atlas_result_datetime': {
+        'default': '2010 01 01 00:00:00',
+        'help': ' Wikipedia says 2010 was when RIPE Atlas was established, so we use that\n; as a starting point for when it might contain some data.'},
+    'probe_properties_to_report': {
+        'default': reportable_probe_properties,
+        'help': 'The list of probe properties to report. Must be a subset of:\n;  ' + str(reportable_probe_properties)},
+    'ripe_atlas_probe_properties_raw_file': {
+        'default': os.environ['HOME'] + '/.RIPE_atlas_all_probe_properties.bz2',
+        'help': 'There are a couple of files used to locally cache probe data, the first comes directly from RIPE:'},
+    'ripe_atlas_probe_properties_json_cache_file': {
+        'default': os.environ['HOME'] + '/.RIPE_atlas_probe_properties_cache_file.json',
+        'help': 'The second cache file we generate, based upon probe info we request (one at a time) from the RIPE Atlas API.'},
+    'ripe_atlas_current_probe_properties_url': {
+        'default': 'https://ftp.ripe.net/ripe/atlas/probes/archive/meta-latest',
+        'help': 'Where to fetch the RA probe properties file from.'},
+    'split_char': {
+        'default': '.',
+        'help': 'character (delimiter) to split the string on (can occur in the string more than once.'}
+}
+options_sample_dict_boolean = {
+    'all_probes': {
+        'default': False,
+        'help': 'show information for probes presnt in *either* result sets, not just those present in *both* sets'},
+    'color': {
+        'default': True,
+        'help': 'colorize output'},
+    'no_color': {
+        'default': False,
+        'help': 'do NOT colorized output (AKA "colourised output")'},
+    'emphasis_chars': {
+        'default': False,
+        'help': 'add a trailing char (! or *) to abberant sites and response times'},
+    'no_header': {
+        'default': False,
+        'help': 'Do NOT show the header above the probe list'},
+    'do_not_list_probes': {
+        'default': False,
+        'help': 'do NOT list the results for each probe'},
+    'list_slow_probes_only': {
+        'default': False,
+        'help': 'in per-probe list,show ONLY the probes reporting response times'},
+    'print_summary_stats': {
+        'default': False,
+        'help': 'show summary stats'}
+}
+options_sample_dict_integer = {
+    'dns_response_item_occurence_to_return': {
+        'default': 1,
+        'help': 'Which item to return from the split-list. First element is 0.'},
+    'latency_diff_threshold': {
+        'default': 5,
+        'help': 'the amount of time difference (ms) that is significant when comparing latencies bewtween tests'},
+    'slow_threshold': {
+        'default': 50,
+        'help': 'Response times (ms) larger thatn this trigger color highlighting.'},
+    'raw_probe_properties_file_max_age': {
+        'default': 86400,
+        'help': 'The max age of the RIPE Atlas probe info file. (older than this and we download a new one)'}
+}
+
+sample_config_string = sample_config_string_header
+expected_config_items =[]
+# Iterate over the items in the three options_sample_dict_* (defined above)
+# and shove them into the big string "sample_config_string" that will then be fed to ConfigParser.
+sample_config_string += "\n[STRING]\n"
+for k in options_sample_dict_string.keys():
+    sample_config_string += (';\n')
+    sample_config_string += ('; ' + options_sample_dict_string[k]['help'] + '\n')
+    sample_config_string += (k + ' = ' + str(options_sample_dict_string[k]['default']) + '\n')
     expected_config_items.append(k)
 #
-sample_config += "\n;;;;;;;;;;;;;;;;;;;;\n[BOOLEAN]\n"
-for k in options_setup_dict_boolean.keys():
-    sample_config += (';\n')
-    sample_config += ('; ' + options_setup_dict_boolean[k]['help'] + '\n')
-    sample_config += (k + ' = ' + str(options_setup_dict_boolean[k]['default']) + '\n')
+sample_config_string += "\n;;;;;;;;;;;;;;;;;;;;\n[BOOLEAN]\n"
+for k in options_sample_dict_boolean.keys():
+    sample_config_string += (';\n')
+    sample_config_string += ('; ' + options_sample_dict_boolean[k]['help'] + '\n')
+    sample_config_string += (k + ' = ' + str(options_sample_dict_boolean[k]['default']) + '\n')
     expected_config_items.append(k)
 #
-sample_config += "\n;;;;;;;;;;;;;;;;;;;;\n[INTEGER]\n"
-for k in options_setup_dict_integer.keys():
-    logger.debug('processing config item: %s' % k)
-    sample_config += (';\n')
-    sample_config += ('; ' + options_setup_dict_integer[k]['help'] + '\n')
-    sample_config += (k + ' = ' + str(options_setup_dict_integer[k]['default']) + '\n')
+sample_config_string += "\n;;;;;;;;;;;;;;;;;;;;\n[INTEGER]\n"
+for k in options_sample_dict_integer.keys():
+    logging.debug('processing config item: %s' % k)
+    sample_config_string += (';\n')
+    sample_config_string += ('; ' + options_sample_dict_integer[k]['help'] + '\n')
+    sample_config_string += (k + ' = ' + str(options_sample_dict_integer[k]['default']) + '\n')
     expected_config_items.append(k)
+
+logging.debug(sample_config_string)
 
 ####################
 #
 # Config file parse
 #
 raw_config = configparser.ConfigParser()
+config_file_read = False
+write_config_file = False
 try:
     if os.stat(my_config_file):
         if os.access(my_config_file, os.R_OK):
             logging.info('Found config file at %s; reading it now...\n' % my_config_file)
             raw_config.read(my_config_file)
+            config_file_read = True
         else:
-            logger.critical('Config file exists at %s, but is not readable.\n' % my_config_file)
+            logging.critical('Config file exists at %s, but is not readable.\n' % my_config_file)
 except FileNotFoundError:
-    logger.info('Config file does not exist at %s; creating new one...\n' % my_config_file)
-    raw_config.read_string(sample_config)
-    with open(my_config_file, 'w') as cf:
-        cf.write(sample_config)
+    logging.info('Config file does not exist at %s; will create a new one...\n' % my_config_file)
+    write_config_file = True
+if not config_file_read:
+    raw_config.read_string(sample_config_string)
 
-### logger.debug(raw_config.sections())
-raw_config_string = raw_config['STRING']
-### logger.debug(raw_config.options('STRING'))
-raw_config_boolean = raw_config['BOOLEAN']
-### logger.debug(raw_config.options('BOOLEAN'))
-raw_config_integer = raw_config['INTEGER']
-### logger.debug(raw_config.options('INTEGER'))
-
-#
-# Loop through what's in config and see if each variable is in the
-# (following) list of expected config variables, so we can catch any
-# unexpected ("illegal") parameters in the config file, rather than let a
-# typo or some bit of random (non-comment) text in the config file go
-# unnoticed.
+# This 'config' dict stores the merged config (from the config file and the sample above).
 config = {}
-for item in raw_config_string:
-    logger.debug(item)
-    if item not in expected_config_items:
-        logger.critical('Unknown parameter in config file: %s\n' % item)
-        exit(1)
+#if config_file_read:
+options_from_config_file = []
+logging.debug(raw_config.sections())
+raw_config_strings = raw_config['STRING']
+raw_config_strings_options = set(raw_config.options('STRING'))
+logging.debug(raw_config.options('STRING'))
+options_from_config_file += raw_config.options('STRING')
+raw_config_boolean = raw_config['BOOLEAN']
+raw_config_boolean_options = set(raw_config.options('BOOLEAN'))
+logging.debug(raw_config.options('BOOLEAN'))
+options_from_config_file += raw_config.options('BOOLEAN')
+raw_config_integer = raw_config['INTEGER']
+raw_config_integer_options = set(raw_config.options('INTEGER'))
+logging.debug(raw_config.options('INTEGER'))
+options_from_config_file += raw_config.options('INTEGER')
+#
+# Loop through what's in the raw config and see if each variable is in
+# the (following) list of expected config variables, so we can catch
+# any unexpected ("illegal") parameters in the config file, rather
+# than let a typo or some bit of random (non-comment) text in the
+# config file go unnoticed.
+for item in raw_config_strings_options:
+    logging.debug('Checking %s to see if it is known...' % item)
+    if item in expected_config_items:
+        config[item] = raw_config_strings.get(item)
     else:
-        config[item] = raw_config_string[item]
-        logger.debug(item + str(config[item]))
-for item in raw_config_boolean:
-    if item not in expected_config_items:
-        logger.critical('Unknown parameter in config file: %s\n' % item)
+        logging.critical('Unknown parameter in config file: %s\n' % item)
         exit(1)
-    else:
-        config[item] = raw_config_boolean.getboolean(item)
-        logger.debug(item + str(config[item]))
-for item in raw_config_integer:
-    logger.debug(item)
-    if item not in expected_config_items:
-        logger.critical('Unknown parameter in config file: %s\n' % item)
-        exit(1)
-    else:
-        config[item] = raw_config_integer.getint(item)
-        logger.debug(item + str(config[item]))
 
-# What we get from configparser is a string, so we need to convert it to a list.
+for item in raw_config_boolean_options:
+    logging.debug('Checking %s to see if it is known...' % item)
+    if item in expected_config_items:
+        config[item] = raw_config_boolean.getboolean(item)
+    else:
+        logging.critical('Unknown parameter in config file: %s\n' % item)
+        exit(1)
+for item in raw_config_integer_options:
+    logging.debug('Checking %s to see if it is known...' % item)
+    if item in expected_config_items:
+        config[item] = raw_config_integer.getint(item)
+    else:
+        logging.critical('Unknown parameter in config file: %s\n' % item)
+        exit(1)
+
+
+if config_file_read:
+    # Loop through what's in the sample config and see if any items are
+    # missing from what was read from the config file.  (Like if we've
+    # added some settings to the script, and it's reading in an older,
+    # pre-existing config file for the first time since the new option was
+    # added.)
+    logging.debug('options_sample_dict_string:')
+    logging.debug(set(options_sample_dict_string))
+    logging.debug('raw_config_strings_options:')
+    logging.debug(set(raw_config_strings_options))
+    for opt in (set(options_sample_dict_string) - set(raw_config_strings_options)):
+        logging.info('%s missing from config file; setting it to default from script: %s' %
+                     (opt, options_sample_dict_string[opt]['default']))
+        config[opt] = options_sample_dict_string[opt]['default']
+        write_config_file = True
+    for opt in set(options_sample_dict_boolean) - set(raw_config_boolean_options):
+        logging.info('%s missing from config file; setting it to default from script: %s' %
+                     (opt, options_sample_dict_boolean[opt]['default']))
+        config[opt] = options_sample_dict_boolean[opt]['default']
+        write_config_file = True
+    for opt in set(options_sample_dict_integer) - set(raw_config_integer_options):
+        logging.info('%s missing from config file; setting it to default from script: %s' %
+                     (opt, options_sample_dict_integer[opt]['default']))
+        config[opt] = options_sample_dict_integer[opt]['default']
+        write_config_file = True
+
+# Write out the config file
+if write_config_file:
+    config_string_to_write = sample_config_string_header
+    # Iterate over the items in the three options_sample_dict_* (defined above)
+    # and shove them into the big string "sample_config_string" that will then be fed to ConfigParser.
+    config_string_to_write += "\n[STRING]\n"
+    for k in options_sample_dict_string.keys():
+        config_string_to_write += (';\n')
+        config_string_to_write += ('; ' + options_sample_dict_string[k]['help'] + '\n')
+        config_string_to_write += (k + ' = ' + str(config[k]) + '\n')
+    config_string_to_write += "\n;;;;;;;;;;;;;;;;;;;;\n[BOOLEAN]\n"
+    for k in options_sample_dict_boolean.keys():
+        config_string_to_write += (';\n')
+        config_string_to_write += ('; ' + options_sample_dict_boolean[k]['help'] + '\n')
+        config_string_to_write += (k + ' = ' + str(config[k]) + '\n')
+    config_string_to_write += "\n;;;;;;;;;;;;;;;;;;;;\n[INTEGER]\n"
+    for k in options_sample_dict_integer.keys():
+        logging.debug('processing config item: %s' % k)
+        config_string_to_write += (';\n')
+        config_string_to_write += ('; ' + options_sample_dict_integer[k]['help'] + '\n')
+        config_string_to_write += (k + ' = ' + str(config[k]) + '\n')
+    logging.debug('Config to write:\n')
+    logging.debug('Config string to write:\n')
+    logging.debug(config_string_to_write)
+    logging.info('Writing config file at: %s\n' % my_config_file)
+    with open(my_config_file, 'w') as cf:
+        cf.write(config_string_to_write)
+
+
+# What we get from configparser is a string. For
+# probe_properties_to_report, we need convert this string to a list.
 # (ast.literal_eval() is safer than plain eval())
 probe_properties_to_report = ast.literal_eval(config['probe_properties_to_report'])
 
@@ -289,29 +363,33 @@ parser = argparse.ArgumentParser(description='Display statistics from RIPE Atlas
 # Compare one measurement's (12016241) for two points in time: 20210101_0000 and 20210301_0000.
 %(prog)s --datetime1 20210101_0000 --datetime2 20210301_0000 12016241
 ''')
-parser.add_argument('--datetime1', '--dt1', help=options_setup_dict_string['datetime1']['help'], type=str, default=config['datetime1'])
-parser.add_argument('--datetime2', '--dt2', help=options_setup_dict_string['datetime2']['help'], type=str, default=config['datetime2'])
-parser.add_argument('-a', '--all_probes', help=options_setup_dict_boolean['all_probes']['help'], action='store_true', default=config['all_probes'])
-parser.add_argument('-c', '--color', '--colour', help=options_setup_dict_boolean['color']['help'], action="store_true", default=config['color'])
-parser.add_argument('-C', '--no_color', '--no_colour', help=options_setup_dict_boolean['no_color']['help'], action="store_true", default=config['no_color'])
-parser.add_argument('-e', '--emphasis_chars', help=options_setup_dict_boolean['emphasis_chars']['help'], action="store_true", default=config['emphasis_chars'])
-parser.add_argument('-H', '--no_header', help=options_setup_dict_boolean['no_header']['help'], action="store_true", default=config['no_header'])
-parser.add_argument('-i', '--dns_response_item_occurence_to_return', help=options_setup_dict_integer['dns_response_item_occurence_to_return']['help'], type=int, default=config['dns_response_item_occurence_to_return'])
-parser.add_argument('-l', '--latency_diff_threshold', help=options_setup_dict_integer['latency_diff_threshold']['help'], type=int, default=config['latency_diff_threshold'])
-parser.add_argument('--log_level', help=options_setup_dict_string['log_level']['help'], type=str, default=config['log_level'], choices=valid_log_levels)
-parser.add_argument('-P', '--do_not_list_probes', help=options_setup_dict_boolean['do_not_list_probes']['help'], action='store_true', default=config['do_not_list_probes'])
-parser.add_argument('-r', '--raw_probe_properties_file_max_age', help=options_setup_dict_integer['raw_probe_properties_file_max_age']['help'], type=int, default=config['raw_probe_properties_file_max_age'])
-parser.add_argument('-s', '--list_slow_probes_only', help=options_setup_dict_boolean['list_slow_probes_only']['help'], action='store_true', default=config['list_slow_probes_only'])
-parser.add_argument('-S', '--slow_threshold', help=options_setup_dict_integer['slow_threshold']['help'], type=int, default=config['slow_threshold'])
-parser.add_argument('-t', '--split_char', help=options_setup_dict_string['split_char']['help'], type=str, default=config['split_char'])
-parser.add_argument('-u', '--print_summary_stats', help=options_setup_dict_boolean['print_summary_stats']['help'], action='store_true', default=config['print_summary_stats'])
+parser.add_argument('--datetime1', '--dt1', help=options_sample_dict_string['datetime1']['help'], type=str, default=config['datetime1'])
+parser.add_argument('--datetime2', '--dt2', help=options_sample_dict_string['datetime2']['help'], type=str, default=config['datetime2'])
+parser.add_argument('-a', '--all_probes', help=options_sample_dict_boolean['all_probes']['help'], action='store_true', default=config['all_probes'])
+parser.add_argument('-c', '--color', '--colour', help=options_sample_dict_boolean['color']['help'], action="store_true", default=config['color'])
+parser.add_argument('-C', '--no_color', '--no_colour', help=options_sample_dict_boolean['no_color']['help'], action="store_true", default=config['no_color'])
+parser.add_argument('-e', '--emphasis_chars', help=options_sample_dict_boolean['emphasis_chars']['help'], action="store_true", default=config['emphasis_chars'])
+parser.add_argument('-H', '--no_header', help=options_sample_dict_boolean['no_header']['help'], action="store_true", default=config['no_header'])
+parser.add_argument('-i', '--dns_response_item_occurence_to_return', help=options_sample_dict_integer['dns_response_item_occurence_to_return']['help'], type=int, default=config['dns_response_item_occurence_to_return'])
+parser.add_argument('-l', '--latency_diff_threshold', help=options_sample_dict_integer['latency_diff_threshold']['help'], type=int, default=config['latency_diff_threshold'])
+parser.add_argument('--log_level', help=options_sample_dict_string['log_level']['help'], type=str, default=config['log_level'], choices=valid_log_levels)
+parser.add_argument('-P', '--do_not_list_probes', help=options_sample_dict_boolean['do_not_list_probes']['help'], action='store_true', default=config['do_not_list_probes'])
+parser.add_argument('-r', '--raw_probe_properties_file_max_age', help=options_sample_dict_integer['raw_probe_properties_file_max_age']['help'], type=int, default=config['raw_probe_properties_file_max_age'])
+parser.add_argument('-s', '--list_slow_probes_only', help=options_sample_dict_boolean['list_slow_probes_only']['help'], action='store_true', default=config['list_slow_probes_only'])
+parser.add_argument('-S', '--slow_threshold', help=options_sample_dict_integer['slow_threshold']['help'], type=int, default=config['slow_threshold'])
+parser.add_argument('-t', '--split_char', help=options_sample_dict_string['split_char']['help'], type=str, default=config['split_char'])
+parser.add_argument('-u', '--print_summary_stats', help=options_sample_dict_boolean['print_summary_stats']['help'], action='store_true', default=config['print_summary_stats'])
 parser.add_argument('filename_or_msmid', help='one or two local filenames or RIPE Atlas Measurement IDs', nargs='+')
 parser.format_help()
 args = parser.parse_known_args()
+###pprint(args)
 
+logger = logging.getLogger()
 logger.setLevel(args[0].log_level)
-### logger.debug('parsed args: '+ str(args[0]))
-### exit()
+
+logger.debug('Config dict:')
+for k, v in config.items():
+    logger.debug('%s : %s' % (k, v))
 
 # Put the remaining command line arguments into a list to process as files
 # or measurement IDs.
