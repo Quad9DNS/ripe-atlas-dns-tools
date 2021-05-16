@@ -13,7 +13,7 @@ PYTHON_VENV_DIR = ${INSTALL_DIR}/py-venv
 # Sometimes this might need to be just "pip"
 PIP = pip3
 
-TEST_DATA_DIR = ${HOME}/Quad9
+TEST_DATA_DIR = ./Test
 
 help:
 	mdcat README.md || cat README.md
@@ -50,7 +50,14 @@ wipe-venv:
 	rm -fr $(INSTALL_DIR)/py-venv
 
 test:
-	./ra-dns-check.py --log_level INFO --datetime1 20210101 --datetime2 20210301 12016241
+	./tester.sh
+
+benchmark:
+	./ra-dns-check.py -C $(TEST_DATA_DIR)/RIPE-Atlas-measurement-29083406.json $(TEST_DATA_DIR)/RIPE-Atlas-measurement-29096558.json > $(TEST_DATA_DIR)/benchmark-test-output-29083406-29096558.txt
+test-info:
+# ./ra-dns-check.py --log_level INFO --datetime1 20210101 --datetime2 20210301 12016241
+	./ra-dns-check.py --log_level INFO $(TEST_DATA_DIR)/RIPE-Atlas-measurement-29083406.json $(TEST_DATA_DIR)/RIPE-Atlas-measurement-29096558.json
+
 
 test-debug:
 	./ra-dns-check.py --log_level DEBUG $(TEST_DATA_DIR)/RIPE-Atlas-measurement-29083406.json $(TEST_DATA_DIR)/RIPE-Atlas-measurement-29096558.json

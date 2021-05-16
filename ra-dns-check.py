@@ -1059,8 +1059,9 @@ if not args[0].do_not_list_probes:
             header_string += (align.format(text) + ' ')
         logger.critical(header_string)
         logger.critical('-' * len(header_string))
-    # Iterate over the list of probe ids to lis, then print out the
+    # Iterate over the list of probe ids to list, then print out the
     # results per result set.
+    probe_ids_to_list.sort()
     logger.debug('Probes to list: ' + str(probe_ids_to_list))
     logger.debug('Probes detail line format string: ' + probe_detail_line_format_string)
     for probe_id in probe_ids_to_list:
@@ -1124,6 +1125,7 @@ if not args[0].do_not_list_probes:
                 rt_a_fmt_chars = ''
                 rt_b_fmt_chars = ''
                 sites_fmt_chars = ''
+                rt_diff_fmt_chars = ''
                 format_clear = ''
             else:
                 if rt_a > args[0].slow_threshold:
