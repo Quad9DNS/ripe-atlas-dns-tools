@@ -1,0 +1,93 @@
+;
+; Config file for ra-dns-check.py
+;
+; This file is automatically created if it does not exist.  After its
+; initial creation, the script will add missing parameters to this config
+; file, but otherwise should not overwrite any changes you make!  (If you
+; ever want to reset everything to the script defaults, you can rename or
+; delete this file and the script will create a new one.)
+;
+; Some important notes on this file's syntax :
+;
+; 1) This file is read by the ConfigParser python module, and therefore
+;    (perhaps surprisingly) it expects Windoze INI syntax *NOT* python
+;    syntax. So:
+;    * do NOT enclose strings within quotes or double quotes
+;      (they will be passed along with the string and break things)
+;    * protect/escape any '%' character with another '%'
+;    *  either ':' or '=' can be used to separate a config variable (key) and its value.
+;    * spaces are allowed *within* (as part of) a value or key!
+;      (So be careful of leading spaces before key names.
+;       E.g ' probe_properties_to_report = ...' will break!)
+;
+; 2) Do not remove or change the [DEFAULT] line, python's ConfigParser module depends upon it.
+;
+;;;;;;;;;;;;;;;;;;;;
+[DEFAULT]
+;
+; date-time to start 10-minute period for FIRST set of results (UTC).
+; Format: 1970-01-01_0000 OR the number of seconds since then (AKA "Unix time")
+datetime1 = None
+;
+; date-time to start 10-minute period for SECOND set of results (UTC).
+;  Format: 1970-01-01_0000 OR the number of seconds since then (AKA "Unix time")
+datetime2 = None
+;
+; The level of logging (debugging) messages to show. One of:['DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL'] (default is WARN)
+log_level = WARN
+;
+;  Wikipedia says 2010 was when RIPE Atlas was established, so we use that
+; as a starting point for when it might contain some data.
+oldest_atlas_result_datetime = 2010 01 01 00:00:00
+;
+; The list of probe properties to report. Must be a subset of:
+;  ['probe_id', 'asn', 'country_code', 'ip_address', 'rt_a', 'rt_b', 'rt_diff', 'dns_response']
+probe_properties_to_report = ['probe_id', 'asn', 'country_code', 'ip_address', 'rt_a', 'rt_b', 'rt_diff', 'dns_response']
+;
+; There are a couple of files used to locally cache probe data, the first comes directly from RIPE:
+ripe_atlas_probe_properties_raw_file = /Users/johan/.RIPE_atlas_all_probe_properties.bz2
+;
+; The second cache file we generate, based upon probe info we request (one at a time) from the RIPE Atlas API.
+ripe_atlas_probe_properties_json_cache_file = /Users/johan/.RIPE_atlas_probe_properties_cache_file.json
+;
+; Where to fetch the RA probe properties file from.
+ripe_atlas_current_probe_properties_url = https://ftp.ripe.net/ripe/atlas/probes/archive/meta-latest
+;
+; character (delimiter) to split the string on (can occur in the string more than once.
+split_char = .
+;
+; show information for probes presnt in *either* result sets, not just those present in *both* sets
+all_probes = False
+;
+; colorize output
+color = True
+;
+; do NOT colorized output (AKA "colourised output")
+no_color = False
+;
+; add a trailing char (! or *) to abberant sites and response times
+emphasis_chars = False
+;
+; Do NOT show the header above the probe list
+no_header = False
+;
+; do NOT list the results for each probe
+do_not_list_probes = False
+;
+; in per-probe list,show ONLY the probes reporting response times
+list_slow_probes_only = False
+;
+; show summary stats
+print_summary_stats = False
+;
+; Which item to return from the split-list. First element is 0.
+dns_response_item_occurence_to_return = 1
+;
+; the amount of time difference (ms) that is significant when comparing latencies bewtween tests
+latency_diff_threshold = 5
+;
+; Response times (ms) larger thatn this trigger color highlighting.
+slow_threshold = 50
+;
+; The max age of the RIPE Atlas probe info file. (older than this and we download a new one)
+raw_probe_properties_file_max_age = 86400
