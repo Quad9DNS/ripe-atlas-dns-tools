@@ -13,7 +13,7 @@ PYTHON_VENV_DIR = ${INSTALL_DIR}/py-venv
 # Sometimes this might need to be just "pip"
 PIP = pip3
 
-TEST_DATA_DIR = ./Test
+TEST_DATA_DIR = ./Test-Data
 
 help:
 	mdcat README.md || cat README.md
@@ -49,15 +49,24 @@ clean:
 wipe-venv:
 	rm -fr $(INSTALL_DIR)/py-venv
 
-test:
-	./tester.sh
+tests:
+	./output_tests.sh -t $(TEST_DATA_DIR)
+
+config-file:
+	./ra-dns-check.py --config_file ./default_config_file \
+		$(TEST_DATA_DIR)/RIPE-Atlas-measurement-29083406.json \
+		$(TEST_DATA_DIR)/RIPE-Atlas-measurement-29096558.json >/dev/null 2>&1
 
 benchmark:
-	./ra-dns-check.py -C $(TEST_DATA_DIR)/RIPE-Atlas-measurement-29083406.json $(TEST_DATA_DIR)/RIPE-Atlas-measurement-29096558.json > $(TEST_DATA_DIR)/benchmark-test-output-29083406-29096558.txt
-test-info:
+	./output_tests.sh -t $(TEST_DATA_DIR)	-B
+
+debug-info:
 # ./ra-dns-check.py --log_level INFO --datetime1 20210101 --datetime2 20210301 12016241
-	./ra-dns-check.py --log_level INFO $(TEST_DATA_DIR)/RIPE-Atlas-measurement-29083406.json $(TEST_DATA_DIR)/RIPE-Atlas-measurement-29096558.json
+	./ra-dns-check.py --log_level INFO \
+		$(TEST_DATA_DIR)/RIPE-Atlas-measurement-29083406.json \
+		$(TEST_DATA_DIR)/RIPE-Atlas-measurement-29096558.json
 
-
-test-debug:
-	./ra-dns-check.py --log_level DEBUG $(TEST_DATA_DIR)/RIPE-Atlas-measurement-29083406.json $(TEST_DATA_DIR)/RIPE-Atlas-measurement-29096558.json
+debug-debug:
+	./ra-dns-check.py --log_level DEBUG \
+		$(TEST_DATA_DIR)/RIPE-Atlas-measurement-29083406.json \
+		$(TEST_DATA_DIR)/RIPE-Atlas-measurement-29096558.json

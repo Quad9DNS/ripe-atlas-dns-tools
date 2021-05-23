@@ -174,19 +174,19 @@ options_sample_dict = {
         'type': 'boolean'},
     'dns_response_item_occurence_to_return': {
         'default': 1,
-        'help': 'Which item to return from the split-list. First element is 0.',
+        'help': 'Which item to return from the split-list. First element is 0. Default: 1',
         'type': 'integer'},
     'latency_diff_threshold': {
         'default': 5,
-        'help': 'the amount of time difference (ms) that is significant when comparing latencies bewtween tests',
+        'help': 'the amount of time difference (ms) that is significant when comparing latencies bewtween tests. Default: 5',
         'type': 'integer'},
     'slow_threshold': {
         'default': 50,
-        'help': 'Response times (ms) larger thatn this trigger color highlighting.',
+        'help': 'Response times (ms) larger than this trigger color highlighting. Default: 50',
         'type': 'integer'},
     'raw_probe_properties_file_max_age': {
         'default': 86400,
-        'help': 'The max age of the RIPE Atlas probe info file. (older than this and we download a new one)',
+        'help': 'The max age (seconds) of the RIPE Atlas probe info file (older than this and we download a new one). Default: 86400',
         'type': 'integer'}
 }
 
@@ -239,7 +239,7 @@ parser.add_argument('-a', '--all_probes', help=options_sample_dict['all_probes']
 parser.add_argument('-c', '--color', '--colour', help=options_sample_dict['color']['help'], action="store_true", default=options_sample_dict['color']['default'])
 parser.add_argument('-C', '--no_color', '--no_colour', help=options_sample_dict['no_color']['help'], action="store_true", default=options_sample_dict['no_color']['default'])
 parser.add_argument('-e', '--emphasis_chars', help=options_sample_dict['emphasis_chars']['help'], action="store_true", default=options_sample_dict['emphasis_chars']['default'])
-parser.add_argument('-f', '--config_file', help='Read the config from specified file', type=str, default=my_config_file)
+parser.add_argument('-f', '--config_file', help='Read (and write) the config from specified file', type=str, default=my_config_file)
 parser.add_argument('-H', '--no_header', help=options_sample_dict['no_header']['help'], action="store_true", default=options_sample_dict['no_header']['default'])
 parser.add_argument('-i', '--dns_response_item_occurence_to_return', help=options_sample_dict['dns_response_item_occurence_to_return']['help'], type=int, default=options_sample_dict['dns_response_item_occurence_to_return']['default'])
 parser.add_argument('-l', '--latency_diff_threshold', help=options_sample_dict['latency_diff_threshold']['help'], type=int, default=options_sample_dict['latency_diff_threshold']['default'])
@@ -394,9 +394,12 @@ def is_valid_unixtime(_possible_unixtime):
 ##########
 # Try a few formats to convert the datetime string they've supplied into unxitime
 def user_datetime_to_valid_unixtime(user_dt_string):
-    accepted_datetime_formats = [ '%Y%m%d', '%Y%m%d%H%M', '%Y%m%d_%H%M', '%Y%m%d_%H:%M',
-                             '%Y%m%d %H%M', '%Y%m%d %H:%M', '%Y-%m-%d_%H%M', '%Y-%m-%d_%H:%M',
-                             '%Y-%m-%d-%H%M', '%Y-%m-%d-%H:%M']
+    accepted_datetime_formats = [ '%Y%m%d', '%Y%m%d%H%M',
+                                  '%Y%m%d_%H%M', '%Y%m%d_%H:%M',
+                                  '%Y%m%d.%H%M', '%Y%m%d.%H:%M',
+                                   '%Y%m%d %H%M', '%Y%m%d %H:%M',
+                                  '%Y-%m-%d_%H%M', '%Y-%m-%d_%H:%M',
+                                  '%Y-%m-%d-%H%M', '%Y-%m-%d-%H:%M']
     # First, check to see if what's supplied is a valid-looking integer
     # representation of a reasonable unix time (seconds since the
     # the 1 Jan 1970 Epoch)
@@ -973,23 +976,23 @@ if not args[0].do_not_list_probes:
         logger.critical('Unexpected result when updating local cache files: %s' % _res)
     p_probe_properties = load_probe_properties(probe_ids_to_list,
                                        config['ripe_atlas_probe_properties_json_cache_file'])
-    if not args[0].no_header:
-        header_label = [None, None]
-        # Set the header labels based on what we're comparing (msm_ids or dates)
-        #  If there are two dates, we want those as the header labels
-        if args[0].datetime2 != None:
-            logger.debug('hasattr datetime2')
-            header_label[0] = str(args[0].datetime1) + '(ms)'
-            header_label[1] = str(args[0].datetime2) + '(ms)'
-        #  Otherwise, if there are two msm_ids, we want those as the header labels
-        elif len(measurement_ids) == 2:
-            header_label[0] = str(measurement_ids[0]) + '(ms)'
-            header_label[1] = str(measurement_ids[1]) + '(ms)'
-        # Last, we just use the one msm_id
-        else:
-            header_label[0] = str(measurement_ids[0]) + '(ms)'
-            header_label[1] = ''
-    # Figure out how wide the text field should be for the IP address, depending upon the IP version.
+    header_label = [None, None]
+    # Set the header labels based on what we're comparing (msm_ids or dates)
+    #  If there are two dates, we want those as the header labels
+    if args[0].datetime2 != None:
+        logger.debug('hasattr datetime2')
+        header_label[0] = str(args[0].datetime1) + '(ms)'
+        header_label[1] = str(args[0].datetime2) + '(ms)'
+    #  Otherwise, if there are two msm_ids, we want those as the header labels
+    elif len(measurement_ids) == 2:
+        header_label[0] = str(measurement_ids[0]) + '(ms)'
+        header_label[1] = str(measurement_ids[1]) + '(ms)'
+    # Last, we just use the one msm_id
+    else:
+        header_label[0] = str(measurement_ids[0]) + '(ms)'
+        header_label[1] = ''
+    # Figure out how wide the text field should be for the IP address,
+    #  depending upon the IP version.
     if report_ip_version == 4:
         address_width = 15
     elif report_ip_version == 6:
@@ -1057,8 +1060,8 @@ if not args[0].do_not_list_probes:
         header_string = ''
         for align, text in zip(header_format, header_words):
             header_string += (align.format(text) + ' ')
-        logger.critical(header_string)
-        logger.critical('-' * len(header_string))
+        sys.stderr.write(header_string + '\n')
+        sys.stderr.write('-' * len(header_string) + '\n')
     # Iterate over the list of probe ids to list, then print out the
     # results per result set.
     probe_ids_to_list.sort()
