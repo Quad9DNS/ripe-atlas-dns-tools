@@ -33,8 +33,8 @@ install: ra-dns-check.py
 	@echo "ra-dns-check.py was installed in: $(INSTALL_DIR)/"
 	@echo " "
 	@echo "To install the python dependencies choose ONE of:"
-	@echo " A) Run it in a python venv by executing ra-dns-check.sh:  make venv"
-	@echo " B) To use ra-dns-check.py directly without a venv:  make install-pydeps"
+	@echo " A) make venv -- then run ra-dns-check.sh which uses the python venv)"
+	@echo " B) make install-pydepsTo -- no python venv, so you use ra-dns-check.py directly"
 
 # Create a python venv
 venv: requirements.txt ra-dns-check.sh
