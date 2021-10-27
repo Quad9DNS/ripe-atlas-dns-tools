@@ -34,7 +34,7 @@ install: ra-dns-check.py
 	@echo " "
 	@echo "To install the python dependencies choose ONE of:"
 	@echo " A) make venv -- then run ra-dns-check.sh which uses the python venv)"
-	@echo " B) make install-pydepsTo -- no python venv, so you use ra-dns-check.py directly"
+	@echo " B) make install-pydeps -- no python venv, so you use ra-dns-check.py directly"
 
 # Create a python venv
 venv: requirements.txt ra-dns-check.sh
