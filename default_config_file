@@ -45,10 +45,10 @@ oldest_atlas_result_datetime = 2010 01 01 00:00:00
 probe_properties_to_report = ['probe_id', 'asn', 'country_code', 'ip_address', 'rt_a', 'rt_b', 'rt_diff', 'dns_response']
 ;
 ; There are a couple of files used to locally cache probe data, the first comes directly from RIPE:
-ripe_atlas_probe_properties_raw_file = /Users/johan/.RIPE_atlas_all_probe_properties.bz2
+ripe_atlas_probe_properties_raw_file = .RIPE_atlas_all_probe_properties.bz2
 ;
 ; The second cache file we generate, based upon probe info we request (one at a time) from the RIPE Atlas API.
-ripe_atlas_probe_properties_json_cache_file = /Users/johan/.RIPE_atlas_probe_properties_cache_file.json
+ripe_atlas_probe_properties_json_cache_file = .RIPE_atlas_probe_properties_cache_file.json
 ;
 ; Where to fetch the RA probe properties file from.
 ripe_atlas_current_probe_properties_url = https://ftp.ripe.net/ripe/atlas/probes/archive/meta-latest
