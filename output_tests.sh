@@ -95,14 +95,14 @@ shift `expr $OPTIND - 1`
 
 ####################
 
-if [ "${ra1}" == "${ra2}" ] ; then
+if [ "${ra1}" = "${ra2}" ] ; then
 	one_script=true
 else
 	one_script=false
 fi
 
 # compare output of 2-file input
-if [ $date_time_only == "false" ] && [ $ip_v6_only == "false" ] ; then
+if [ $date_time_only = "false" ] && [ $ip_v6_only = "false" ] ; then
 	for opt in $test_opts
 	do
 		opt_arg=''
@@ -116,7 +116,7 @@ if [ $date_time_only == "false" ] && [ $ip_v6_only == "false" ] ; then
 											"${test_AB_source_file_1}" \
 											"${test_AB_source_file_2}" \
 											> $tmpfile1 2>&1
-		if [ $create_benchmark_output == 'true' ]; then
+		if [ $create_benchmark_output = 'true' ]; then
 			echo "Updating ${benchmark_AB_file}"
 			mv "${tmpfile1}" "${benchmark_AB_file}"
 		else
@@ -127,7 +127,7 @@ if [ $date_time_only == "false" ] && [ $ip_v6_only == "false" ] ; then
 				1)
 					errecho "Unexpected differences in output exist; you can find suspect output in tempfiles:"
 					errecho " ${tmpfile1}"
-					if [ $one_script == 'false' ] ; then
+					if [ $one_script = 'false' ] ; then
 						errecho " ${tmpfile2}"
 					fi
 					errecho "Compare with what's in ${TEST_DATA_DIR}"
@@ -141,7 +141,7 @@ if [ $date_time_only == "false" ] && [ $ip_v6_only == "false" ] ; then
 fi
 
 # compare output of one IPv4 inputfile with a date range
-if [ $ip_v6_only == "false" ] ; then
+if [ $ip_v6_only = "false" ] ; then
 	for opt in $test_opts
 	do
 		opt_arg=''
@@ -157,7 +157,7 @@ if [ $ip_v6_only == "false" ] ; then
 											--datetime2 20210522.09:45 \
 											"${test_date_diff_v4_mesid}" \
 											> $tmpfile1 2>&1
-		if [ $create_benchmark_output == 'true' ]; then
+		if [ $create_benchmark_output = 'true' ]; then
 			echo "Updating ${benchmark_date_diff_v4_file}"
 			mv "${tmpfile1}" "${benchmark_date_diff_v4_file}"
 		else
@@ -168,7 +168,7 @@ if [ $ip_v6_only == "false" ] ; then
 				1)
 					errecho "Unexpected differences in output exist; you can find suspect output in tempfiles:"
 					errecho " ${tmpfile1}"
-					if [ $one_script == 'false' ] ; then
+					if [ $one_script = 'false' ] ; then
 						errecho " ${tmpfile2}"
 					fi
 					errecho "Compare with what's in ${TEST_DATA_DIR}"
@@ -183,7 +183,7 @@ fi
 
 
 # compare output of one IPv6 inputfile with a date range
-if [ $ip_v4_only == "false" ] ; then
+if [ $ip_v4_only = "false" ] ; then
 	for opt in $test_opts
 	do
 		opt_arg=''
@@ -199,7 +199,7 @@ if [ $ip_v4_only == "false" ] ; then
 											--datetime2 20210522.09:45 \
 											"${test_date_diff_v6_mesid}" \
 											> $tmpfile1 2>&1
-		if [ $create_benchmark_output == 'true' ]; then
+		if [ $create_benchmark_output = 'true' ]; then
 			echo "Updating ${benchmark_date_diff_v6_file}"
 			mv "${tmpfile1}" "${benchmark_date_diff_v6_file}"
 		else
@@ -210,7 +210,7 @@ if [ $ip_v4_only == "false" ] ; then
 				1)
 					errecho "Unexpected differences in output exist; you can find suspect output in tempfiles:"
 					errecho " ${tmpfile1}"
-					if [ $one_script == 'false' ] ; then
+					if [ $one_script = 'false' ] ; then
 						errecho " ${tmpfile2}"
 					fi
 					errecho "Compare with what's in ${TEST_DATA_DIR}"
@@ -224,7 +224,7 @@ if [ $ip_v4_only == "false" ] ; then
 fi
 
 
-if [ $create_benchmark_output == 'true' ]; then
+if [ $create_benchmark_output = 'true' ]; then
 	exit 0
 else
 	$N rm -f $tmpfile1
