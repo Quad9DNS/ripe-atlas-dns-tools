@@ -32,6 +32,9 @@ tidy up first,  mainly to regenerate ra-dns-check.sh, like so:
 * Install the scripts:
  ```make install```
 
-...then, you must do one these steps for at least the first install :
+...then, you must do **one** of these steps for at least the first install :
 
 * ```make venv```   **OR**   ```make install-pydeps```
+
+After the initial install of the venv or python dependencies, you probably
+don't need to do these again, unless the dependencies have changed.
