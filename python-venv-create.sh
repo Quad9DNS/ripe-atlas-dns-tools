@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+#!/usr/bin/env sh
 
 set -e -u
 
@@ -82,7 +82,7 @@ _pip3="pip-${_python_series}"
 
 "${_python}" -m venv "${_venv_dir}"
 #env
-source "${_venv_dir}/bin/activate"
+. "${_venv_dir}/bin/activate"
 #echo "------"
 #env
 type pip
