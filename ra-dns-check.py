@@ -661,13 +661,23 @@ def process_request(_data_source, _results_set_id, _unixtime):
             m_total_errors[_results_set_id] += 1
         else:
             # Even more (abuf) error checks...
-            if dns_result.responses[0].abuf.is_malformed:
-                m_total_abuf_malformeds[_results_set_id] += 1
+            #
+            # first check if there is even a dns_result.responses[0].abuf,
+            # because apparently sometimes there's not! :S (It seems like
+            # if there is not an abuf, we might want to skip some of the
+            # following code, but determining which lines can be skipped
+            # adds complexity to this bug fix, so johan is not going to do
+            # that right now.)
+            if dns_result.responses[0].abuf:
+                logger.debug('dns_result.responses[0].abuf: %s\n' % (dns_result.responses[0].abuf))
+                if dns_result.responses[0].abuf.is_malformed:
+                    m_total_abuf_malformeds[_results_set_id] += 1
             #            try dns_result.responses[1].get:
             if len(dns_result.responses) > 1: ### FIXME: Should this be 0 instead of 1?
-                if dns_result.responses[1].abuf.is_malformed:
-                    m_total_abuf_malformeds[_results_set_id] += 1
-            # ... otherwise appended results to the dicts...
+                if dns_result.responses[1].abuf:
+                    if dns_result.responses[1].abuf.is_malformed:
+                        m_total_abuf_malformeds[_results_set_id] += 1
+            # Appended results to the dicts...
             m_response_times[_results_set_id].append(dns_result.responses[0].response_time)
             m_total_response_time[_results_set_id] += (dns_result.responses[0].response_time)
             if dns_result.responses[0].response_time > args[0].slow_threshold:
