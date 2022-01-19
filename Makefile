@@ -38,6 +38,7 @@ install: ra-dns-check.py
 
 # Create a python venv
 venv: requirements.txt ra-dns-check.sh
+	mkdir -p $(INSTALL_DIR)
 	install -m 555 ra-dns-check.sh $(INSTALL_DIR)
 	./python-venv-create.sh $(PYTHON3) $(PYTHON_VENV_DIR)
 
