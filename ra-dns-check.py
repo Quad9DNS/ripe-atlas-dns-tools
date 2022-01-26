@@ -630,7 +630,7 @@ def process_request(_data_source, _results_set_id, _unixtime):
     #
     m_response_times[_results_set_id] = []
     m_timestamps[_results_set_id] = []
-    # The list of seen probe IDs for this measurentment-result-set
+    # The list of seen probe IDs for this measurement-result-set
     m_seen_probe_ids[_results_set_id] = []
     m_probe_ids_to_exclude = []
 
@@ -905,7 +905,7 @@ def load_probe_properties(probe_ids, ppcf):
 # Data loading and summary stats reporting loop ...
 while results_set_id <= last_results_set_id:
 #for t in data_sources:
-    # m will receive the measurment ID for the processed data source
+    # m will receive the measurement ID for the processed data source
     logger.debug('data_source: %s  results_set_id: %i  unixtime: %i\n' % (data_sources[results_set_id], results_set_id, unixtimes[results_set_id]))
     m = process_request(data_sources[results_set_id], results_set_id, unixtimes[results_set_id])
     measurement_ids.append(m)
