@@ -754,7 +754,7 @@ def process_request(_data_source, _results_set_id, _unixtime):
 #
 # RIPE publishes a (daily?) updated version of all the probe data in one
 # bz2-compressed file via HTTPS or FTP, so we can download that
-# perdiodically.  The probe info is formatted as a 1-line JSON blob, that
+# periodically.  The probe info is formatted as a 1-line JSON blob, that
 # this script reads in and converts into a python dictionary.
 #
 # However, at the time of this writing (Apr. 2021) this file from RIPE
