@@ -421,12 +421,12 @@ def user_datetime_to_valid_unixtime(user_dt_string):
         except ValueError:
             ...
     # If fall out the bottom of the (above) for loop, then we do not have a valid time
-    logger.critical('Cannot validate "' + user_dt_string + '" as a date-time respresentation\n')
+    logger.critical('Cannot validate "' + user_dt_string + '" as a date-time representation\n')
     exit(2)
 
 # A list that might contain the user-supplied time period durations
 # durations = [args[0].duration1, args[0].duration2 ]
-# A list that might contain the unixtime respresentation of the user-supplied start times
+# A list that might contain the unixtime representation of the user-supplied start times
 unixtimes = [0, 0]
 
 #####
