@@ -748,7 +748,7 @@ def process_request(_data_source, _results_set_id, _unixtime):
 #####
 # A) Why use a local cache?
 # AFAICT, one can only request info about one probe at a time from the
-# RIPE Atlas API, and that can be a slow, latentcy-ful process.
+# RIPE Atlas API, and that can be a slow, latency-ful process.
 #
 # B) Why are there two cache files?
 #
