@@ -1080,7 +1080,7 @@ if not args[0].do_not_list_probes:
             fmt_string_a = 'f_sites_fmt_chars:s}{f_' + pp
             fmt_string_b = '15s}{f_sites_emph_char:s}{f_fmt_clear:s'
         else:
-            logger.critical('Unknown probe paramter: %s' % pp)
+            logger.critical('Unknown probe parameter: %s' % pp)
         probe_detail_line_format_string += '{' + fmt_string_a + ':' + fmt_string_b + '} '
     #
     probe_detail_line_format_string += '{f_fmt_clear:s}'
