@@ -178,7 +178,7 @@ options_sample_dict = {
         'type': 'integer'},
     'latency_diff_threshold': {
         'default': 5,
-        'help': 'the amount of time difference (ms) that is significant when comparing latencies bewtween tests. Default: 5',
+        'help': 'the amount of time difference (ms) that is significant when comparing latencies between tests. Default: 5',
         'type': 'integer'},
     'slow_threshold': {
         'default': 50,
