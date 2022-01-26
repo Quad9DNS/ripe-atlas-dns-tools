@@ -154,7 +154,7 @@ options_sample_dict = {
         'type': 'boolean'},
     'emphasis_chars': {
         'default': False,
-        'help': 'add a trailing char (! or *) to abberant sites and response times',
+        'help': 'add a trailing char (! or *) to aberrant sites and response times',
         'type': 'boolean'},
     'no_header': {
         'default': False,
