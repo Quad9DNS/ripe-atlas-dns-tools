@@ -142,7 +142,7 @@ options_sample_dict = {
         'type': 'string'},
     'all_probes': {
         'default': False,
-        'help': 'show information for probes presnt in *either* result sets, not just those present in *both* sets',
+        'help': 'show information for probes present in *either* result sets, not just those present in *both* sets',
         'type': 'boolean'},
     'color': {
         'default': True,
