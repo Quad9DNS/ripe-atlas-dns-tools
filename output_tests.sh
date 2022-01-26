@@ -11,7 +11,7 @@ OS=`uname`
 tmpfile1=`mktemp -t $ME.XXXXX`
 tmpfile2=`mktemp -t $ME.XXXXX`
 
-# Provide for comparing outpyt of two different versions of the script
+# Provide for comparing output of two different versions of the script
 ra1=./ra-dns-check.py
 ra2="${ra1}"
 create_benchmark_output=false
