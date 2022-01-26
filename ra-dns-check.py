@@ -397,7 +397,7 @@ def is_valid_unixtime(_possible_unixtime):
         return False
 
 ##########
-# Try a few formats to convert the datetime string they've supplied into unxitime
+# Try a few formats to convert the datetime string they've supplied into unixtime
 def user_datetime_to_valid_unixtime(user_dt_string):
     accepted_datetime_formats = [ '%Y%m%d', '%Y%m%d%H%M',
                                   '%Y%m%d_%H%M', '%Y%m%d_%H:%M',
