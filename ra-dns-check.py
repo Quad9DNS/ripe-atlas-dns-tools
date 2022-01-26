@@ -615,7 +615,7 @@ def process_request(_data_source, _results_set_id, _unixtime):
             sys.exit(12)
 
     # Variables that start with a m_ are specific to measurements.
-    # All of the m_* dictionaries are initalized at the top of the script.
+    # All of the m_* dictionaries are initialized at the top of the script.
     # Here, we are initializing the structure we will be writing into for this _results_set_id.
     # (results set identifier)
     m_ip_version[_results_set_id] = 0
