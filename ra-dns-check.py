@@ -23,7 +23,7 @@ from datetime import datetime
 import bz2
 # needed to fetch the probe properties file from RIPE
 import urllib.request
-# These RIPE puthon modules are usually installed with pip:
+# These RIPE python modules are usually installed with pip:
 from ripe.atlas.cousteau import AtlasLatestRequest
 from ripe.atlas.cousteau import AtlasResultsRequest
 from ripe.atlas.cousteau import Probe
