@@ -187,7 +187,11 @@ options_sample_dict = {
     'raw_probe_properties_file_max_age': {
         'default': 86400,
         'help': 'The max age (seconds) of the RIPE Atlas probe info file (older than this and we download a new one). Default: 86400',
-        'type': 'integer'}
+        'type': 'integer'},
+    'exclusion_list_file': {
+        'default': None,
+        'help': 'Filename for probe ID exclusion list',
+        'type': 'string'}
 }
 
 sample_config_string = sample_config_string_header
@@ -239,6 +243,7 @@ parser.add_argument('-a', '--all_probes', help=options_sample_dict['all_probes']
 parser.add_argument('-c', '--color', '--colour', help=options_sample_dict['color']['help'], action="store_true", default=options_sample_dict['color']['default'])
 parser.add_argument('-C', '--no_color', '--no_colour', help=options_sample_dict['no_color']['help'], action="store_true", default=options_sample_dict['no_color']['default'])
 parser.add_argument('-e', '--emphasis_chars', help=options_sample_dict['emphasis_chars']['help'], action="store_true", default=options_sample_dict['emphasis_chars']['default'])
+parser.add_argument('-E', '--exclusion_list_file', help=options_sample_dict['exclusion_list_file']['help'], type=str, default=None)
 parser.add_argument('-f', '--config_file', help='Read (and write) the config from specified file', type=str, default=my_config_file)
 parser.add_argument('-H', '--no_header', help=options_sample_dict['no_header']['help'], action="store_true", default=options_sample_dict['no_header']['default'])
 parser.add_argument('-i', '--dns_response_item_occurence_to_return', help=options_sample_dict['dns_response_item_occurence_to_return']['help'], type=int, default=options_sample_dict['dns_response_item_occurence_to_return']['default'])
@@ -627,7 +632,15 @@ def process_request(_data_source, _results_set_id, _unixtime):
     m_timestamps[_results_set_id] = []
     # The list of seen probe IDs for this measurentment-result-set
     m_seen_probe_ids[_results_set_id] = []
+    m_probe_ids_to_exclude = []
 
+    if args[0].exclusion_list_file:
+        try:
+            with open(args[0].exclusion_list_file, 'r') as f:
+                m_probe_ids_to_exclude = f.read().splitlines()
+        except IOError:
+            logger.critical ('Cannot read probe exclusion list from file: %s\n' % args[0].exclusion_list_file)
+            exit(13)
 
     # Loop through each (probe) result that come back from the call to DnsResult.
     for r in results:
@@ -638,6 +651,13 @@ def process_request(_data_source, _results_set_id, _unixtime):
         # 'on_error=DnsResult.ACTION_IGNORE' causes DnsResult to discard
         # std.err -- this script should be updated to catch and report
         # what's logged there.
+
+        # Probe exclusion list handling, doing it here as to do it as
+        # close to the source as possible. That is, as soon as we know
+        # the ID's of the probes, we exclude those we don't want.
+        if dns_result.probe_id in m_probe_ids_to_exclude:
+            continue
+
         #
         # If the user supplied measurement ID(s) on the command line, we
         # already have them, but if they supplied filenames to read from,
