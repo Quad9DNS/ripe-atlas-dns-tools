@@ -191,7 +191,7 @@ options_sample_dict = {
     'exclusion_list_file': {
         'default': None,
         'help': 'Filename for probe ID exclusion list',
-        'type': 'string'}
+        'type': 'string'},
 }
 
 sample_config_string = sample_config_string_header
@@ -243,7 +243,7 @@ parser.add_argument('-a', '--all_probes', help=options_sample_dict['all_probes']
 parser.add_argument('-c', '--color', '--colour', help=options_sample_dict['color']['help'], action="store_true", default=options_sample_dict['color']['default'])
 parser.add_argument('-C', '--no_color', '--no_colour', help=options_sample_dict['no_color']['help'], action="store_true", default=options_sample_dict['no_color']['default'])
 parser.add_argument('-e', '--emphasis_chars', help=options_sample_dict['emphasis_chars']['help'], action="store_true", default=options_sample_dict['emphasis_chars']['default'])
-parser.add_argument('-E', '--exclusion_list_file', help=options_sample_dict['exclusion_list_file']['help'], type=str, default=None)
+parser.add_argument('-E', '--exclusion_list_file', help=options_sample_dict['exclusion_list_file']['help'], type=str, default=options_sample_dict['exclusion_list_file']['default'])
 parser.add_argument('-f', '--config_file', help='Read (and write) the config from specified file', type=str, default=my_config_file)
 parser.add_argument('-H', '--no_header', help=options_sample_dict['no_header']['help'], action="store_true", default=options_sample_dict['no_header']['default'])
 parser.add_argument('-i', '--dns_response_item_occurence_to_return', help=options_sample_dict['dns_response_item_occurence_to_return']['help'], type=int, default=options_sample_dict['dns_response_item_occurence_to_return']['default'])
@@ -655,7 +655,7 @@ def process_request(_data_source, _results_set_id, _unixtime):
         # Probe exclusion list handling, doing it here as to do it as
         # close to the source as possible. That is, as soon as we know
         # the ID's of the probes, we exclude those we don't want.
-        if dns_result.probe_id in m_probe_ids_to_exclude:
+        if str(dns_result.probe_id) in m_probe_ids_to_exclude:
             continue
 
         #
