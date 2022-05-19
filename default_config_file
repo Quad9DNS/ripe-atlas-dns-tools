@@ -56,8 +56,8 @@ ripe_atlas_current_probe_properties_url = https://ftp.ripe.net/ripe/atlas/probes
 ; character (delimiter) to split the string on (can occur in the string more than once.
 split_char = .
 ;
-; show information for probes presnt in *either* result sets, not just those present in *both* sets
-all_probes = False
+; show information for probes present in *either* result sets, not just those present in *both* sets
+all_probes = True
 ;
 ; colorize output
 color = True
@@ -65,7 +65,7 @@ color = True
 ; do NOT colorized output (AKA "colourised output")
 no_color = False
 ;
-; add a trailing char (! or *) to abberant sites and response times
+; add a trailing char (! or *) to aberrant sites and response times
 emphasis_chars = False
 ;
 ; Do NOT show the header above the probe list
@@ -80,14 +80,17 @@ list_slow_probes_only = False
 ; show summary stats
 print_summary_stats = False
 ;
-; Which item to return from the split-list. First element is 0.
+; Which item to return from the split-list. First element is 0. Default: 1
 dns_response_item_occurence_to_return = 1
 ;
-; the amount of time difference (ms) that is significant when comparing latencies bewtween tests
+; the amount of time difference (ms) that is significant when comparing latencies between tests. Default: 5
 latency_diff_threshold = 5
 ;
-; Response times (ms) larger thatn this trigger color highlighting.
+; Response times (ms) larger than this trigger color highlighting. Default: 50
 slow_threshold = 50
 ;
-; The max age of the RIPE Atlas probe info file. (older than this and we download a new one)
+; The max age (seconds) of the RIPE Atlas probe info file (older than this and we download a new one). Default: 86400
 raw_probe_properties_file_max_age = 86400
+;
+; Filename for probe ID exclusion list
+exclusion_list_file = None
