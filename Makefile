@@ -46,28 +46,45 @@ venv: requirements.txt ra-dns-check.sh
 clean:
 	rm ra-dns-check.sh
 
-# Remove everything the python venv directory that was createrd with "make venv"
-wipe-venv:
-	rm -fr $(INSTALL_DIR)/py-venv
-
-tests:
-	./output_tests.sh -t $(TEST_DATA_DIR)
-
+# re-generate the default config file
 config-file:
 	./ra-dns-check.py --config_file ./default_config_file \
 		$(TEST_DATA_DIR)/RIPE-Atlas-measurement-29083406.json \
 		$(TEST_DATA_DIR)/RIPE-Atlas-measurement-29096558.json >/dev/null 2>&1
 
-benchmark:
-	./output_tests.sh -t $(TEST_DATA_DIR)	-B
-
+# Run sample with INFO level output
 debug-info:
 # ./ra-dns-check.py --log_level INFO --datetime1 20210101 --datetime2 20210301 12016241
 	./ra-dns-check.py --log_level INFO \
 		$(TEST_DATA_DIR)/RIPE-Atlas-measurement-29083406.json \
 		$(TEST_DATA_DIR)/RIPE-Atlas-measurement-29096558.json
 
+# Run sample with DEBUG level output
 debug-debug:
 	./ra-dns-check.py --log_level DEBUG \
 		$(TEST_DATA_DIR)/RIPE-Atlas-measurement-29083406.json \
 		$(TEST_DATA_DIR)/RIPE-Atlas-measurement-29096558.json
+
+# Sample run with default config file
+sample:
+	./ra-dns-check.py --config_file ./default_config_file \
+		$(TEST_DATA_DIR)/RIPE-Atlas-measurement-29083406.json \
+		$(TEST_DATA_DIR)/RIPE-Atlas-measurement-29096558.json
+
+# Sample run without default config file. (Will use config file in $HOME, if it exists.)
+sample-myconfig:
+	./ra-dns-check.py \
+		$(TEST_DATA_DIR)/RIPE-Atlas-measurement-29083406.json \
+		$(TEST_DATA_DIR)/RIPE-Atlas-measurement-29096558.json
+
+# run the output tests
+tests:
+	./output_tests.sh -t $(TEST_DATA_DIR)
+
+# Regenerate the data used to run the output tests by pulling down new data from RIPE
+tests-benchmark:
+	./output_tests.sh -t $(TEST_DATA_DIR)	-B
+
+# Remove everything the python venv directory that was createrd with "make venv"
+wipe-venv:
+	rm -fr $(INSTALL_DIR)/py-venv
