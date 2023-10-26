@@ -16,5 +16,5 @@ ripe.atlas.tools==2.3.0
 six==1.15.0
 socketIO-client==0.7.2
 tzlocal==2.1
-urllib3==1.26.17
+urllib3==1.26.18
 websocket-client==0.58.0
