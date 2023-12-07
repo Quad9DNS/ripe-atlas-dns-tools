@@ -188,6 +188,14 @@ options_sample_dict = {
         'default': 86400,
         'help': 'The max age (seconds) of the RIPE Atlas probe info file (older than this and we download a new one). Default: 86400',
         'type': 'integer'},
+    'scrape': {
+        'default': '',
+        'help': 'Scrape output for Prometheus',
+        'type': 'string'},
+    'probes': {
+        'default': [],
+        'help': 'Selected probes list eg. "919,166,1049"',
+        'type': 'list'},
     'exclusion_list_file': {
         'default': None,
         'help': 'Filename for probe ID exclusion list',
@@ -260,6 +268,8 @@ parser.add_argument('-s', '--list_slow_probes_only', help=options_sample_dict['l
 parser.add_argument('-S', '--slow_threshold', help=options_sample_dict['slow_threshold']['help'], type=int, default=options_sample_dict['slow_threshold']['default'])
 parser.add_argument('-t', '--split_char', help=options_sample_dict['split_char']['help'], type=str, default=options_sample_dict['split_char']['default'])
 parser.add_argument('-u', '--print_summary_stats', help=options_sample_dict['print_summary_stats']['help'], action='store_true', default=options_sample_dict['print_summary_stats']['default'])
+parser.add_argument('--scrape', help=options_sample_dict['scrape']['help'], action='store_true', default=options_sample_dict['scrape']['default'])
+parser.add_argument('--probes', help=options_sample_dict['probes']['help'], type=str, default=options_sample_dict['probes']['default'])
 parser.add_argument('filename_or_msmid', help='one or two local filenames or RIPE Atlas Measurement IDs', nargs='+')
 parser.format_help()
 args = parser.parse_known_args()
