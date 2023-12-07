@@ -874,34 +874,33 @@ def load_probe_properties(probe_ids, ppcf):
     # Loop through the list of supplied (seen) probe ids and collect their
     # info/meta data from either our local file or the RIPE Atlas API
     logger.info ('Matching seen probes with probe data; will query RIPE Atlas API for probe info not in local cache...\n')
-    for p in probe_ids:
-        if p in all_probes_dict.keys():
-            probe_cache_hits += 1
-            logger.debug('Probe %s info found in local cache.' % p)
-            matched_probe_info[p] = all_probes_dict[p]
-        else:
-            # If it's not in the cache file, request it from RIPE
-            #logger.debug ('NOT cached, trying RIPE Atlas...')
-            try:
-                ripe_result = Probe(id=p)
-                #
-                matched_probe_info[p] = {'asn_v4': ripe_result.asn_v4,
-                                         'asn_v6': ripe_result.asn_v6,
-                                         'country_code': ripe_result.country_code,
-                                         'address_v4':  ripe_result.address_v4,
-                                         'address_v6':  ripe_result.address_v6}
-                probe_cache_misses += 1
-                all_probes_dict[p] = matched_probe_info[p]
-                logger.debug('Probe %9s info fetched from RIPE' % p)
-            except:
-                # Otherwise, it's empty
-                # we did not find any information about the probe, so set values to '-'
-                matched_probe_info[p] = { 'asn_v4': '-',
-                                          'asn_v6': '-',
-                                          'country_code': '-',
-                                          'address_v4': '-',
-                                          'address_v6': '-' }
-                logger.debug('Failed to get info about probe ID %s in the local cache or from RIPE Atlas API.' % p)
+    # Using python set() data strucure instead of checking ccahe hits or misses
+    # python set() element is unique and using set theory, we can identify the differences
+    # and discover new element not found in the caches. This reduce computational complexity
+    dns_probes = set(str(x) for x in probe_ids)
+    all_probes = set(all_probes_dict.keys())
+    new_probes = dns_probes.difference(all_probes)
+    for i in dns_probes:
+        matched_probe_info[i] = all_probes_dict[i] 
+    try:
+        for p in new_probes:
+            ripe_result = Probe(id=p)
+            matched_probe_info[p] = {'asn_v4': ripe_result.asn_v4,
+                                    'asn_v6': ripe_result.asn_v6,
+                                    'country_code': ripe_result.country_code,
+                                    'address_v4':  ripe_result.address_v4,
+                                    'address_v6':  ripe_result.address_v6}
+            all_probes_dict[p] = matched_probe_info[p]
+            logger.debug('Probe %9s info fetched from RIPE' % p)
+    except:
+           # Otherwise, it's empty
+           # we did not find any information about the probe, so set values to '-'
+           matched_probe_info[p] = { 'asn_v4': '-',
+                                     'asn_v6': '-',
+                                     'country_code': '-',
+                                     'address_v4': '-',
+                                     'address_v6': '-' }
+           logger.debug('Failed to get info about probe ID %s in the local cache or from RIPE Atlas API.' % p)
     logger.info('cache hits: %i   cache misses: %i.\n' % (probe_cache_hits, probe_cache_misses))
     # Write out the local JSON cache file
     with open(ppcf, mode='w') as f:
