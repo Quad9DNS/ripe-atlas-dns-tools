@@ -568,7 +568,7 @@ else:
 # Process the data, either from a local file or by requesting it over the
 # 'net from RIPE Atlas.
 #
-def process_request(_data_source, _results_set_id, _unixtime):
+def process_request(_data_source, _results_set_id, _unixtime, probes = []):
     logger.info('Trying to access data_source %s for unixtime %s\n' % (_data_source, _unixtime))
     # First we try to open the _data_source as a local file.  If it exists,
     # read in the measurement results from a filename the user has
@@ -599,7 +599,8 @@ def process_request(_data_source, _results_set_id, _unixtime):
             # If we have no unixtime to request results from, then we get the latest results
             if _unixtime == 0:
                 kwargs = {
-                    "msm_id": measurement_id
+                    "msm_id": measurement_id,
+                    "probe_ids": probes
                 }
                 logger.info('Fetching latest results for Measurement %i from RIPE Atlas API...\n' % measurement_id)
                 is_success, results = AtlasLatestRequest(**kwargs).create()
@@ -613,7 +614,8 @@ def process_request(_data_source, _results_set_id, _unixtime):
                 kwargs = {
                     "msm_id": measurement_id,
                     "start": _unixtime,
-                    "stop": _stop_time
+                    "stop": _stop_time,
+                    "probe_ids": probes
                 }
                 logger.info('Fetching results for Measurement %i,  start unixtime: %s  stop unixtime: %s\n' % (measurement_id, _unixtime, _stop_time))
                 is_success, results = AtlasResultsRequest(**kwargs).create()
@@ -746,7 +748,7 @@ def process_request(_data_source, _results_set_id, _unixtime):
     m_timestamps[_results_set_id].sort()
     m_seen_probe_ids[_results_set_id].sort()
     logger.debug('m_seen_probe_ids[_results_set_id] is %d\n' % len(m_seen_probe_ids[_results_set_id]))
-    return measurement_id
+    return measurement_id, results
 
 # END def process_request
 ####################
@@ -913,11 +915,39 @@ def load_probe_properties(probe_ids, ppcf):
 ######
 #
 # Data loading and summary stats reporting loop ...
+
+try:
+    probes = args[0].probes.split(',')
+except:
+    probes = []
+
+if args[0].scrape:
+    m, dnsresult = process_request(data_sources[results_set_id], results_set_id, unixtimes[results_set_id], probes)
+    p_probe_properties = load_probe_properties([dnsresult[x]['prb_id'] for x in range(len(dnsresult))], config['ripe_atlas_probe_properties_json_cache_file'])
+    for dnsprobe in dnsresult:
+        try:
+            probe_num = str(dnsprobe['prb_id'])
+            pop = dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[0]
+            city = dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[1]
+            ripe_atlas_latency = { 'measurement_id' : dnsprobe['msm_id'], 
+                                   'probe_id' : dnsprobe['prb_id'],
+                                   'version' : dnsprobe['af'],
+                                   'probe_asn' : p_probe_properties[probe_num]['asn_v4'],
+                                   'probe_ip' : dnsprobe['from'],
+                                   'country' :  p_probe_properties[probe_num]['country_code'],
+                                   'city' :  city,
+                                   'pop' : pop,
+                                  }
+            print ("ripe_atlas_latency{} {} {}".format(str(ripe_atlas_latency).replace(" ",""),dnsprobe['result']['rt'],dnsprobe['timestamp']))
+        except: 
+            pass
+    exit()
+    
 while results_set_id <= last_results_set_id:
 #for t in data_sources:
     # m will receive the measurement ID for the processed data source
     logger.debug('data_source: %s  results_set_id: %i  unixtime: %i\n' % (data_sources[results_set_id], results_set_id, unixtimes[results_set_id]))
-    m = process_request(data_sources[results_set_id], results_set_id, unixtimes[results_set_id])
+    m = process_request(data_sources[results_set_id], results_set_id, unixtimes[results_set_id], probes)
     measurement_ids.append(m)
     ######
     # Summary stats
