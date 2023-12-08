@@ -923,19 +923,22 @@ except:
 if args[0].scrape:
     m, dnsresult = process_request(data_sources[results_set_id], results_set_id, unixtimes[results_set_id], probes)
     p_probe_properties = load_probe_properties([dnsresult[x]['prb_id'] for x in range(len(dnsresult))], config['ripe_atlas_probe_properties_json_cache_file'])
+    print ('''
+# HELP ripe_atlas_latency The number of milliseconds for response reported by this probe for the time period requested on this measurement
+# TYPE ripe_atlas_latency gauge ''')
     for dnsprobe in dnsresult:
         try:
             probe_num = str(dnsprobe['prb_id'])
-            pop = dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[0]
-            city = dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[1]
+            host = dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[0]
+            loc = dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[1]
             ripe_atlas_latency = { 'measurement_id' : dnsprobe['msm_id'], 
                                    'probe_id' : dnsprobe['prb_id'],
                                    'version' : dnsprobe['af'],
                                    'probe_asn' : p_probe_properties[probe_num]['asn_v4'],
                                    'probe_ip' : dnsprobe['from'],
                                    'country' :  p_probe_properties[probe_num]['country_code'],
-                                   'city' :  city,
-                                   'pop' : pop,
+                                   'loc' :  loc,
+                                   'host' : host,
                                   }
             print ("ripe_atlas_latency{} {} {}".format(str(ripe_atlas_latency).replace(" ",""),dnsprobe['result']['rt'],dnsprobe['timestamp']))
         except: 
