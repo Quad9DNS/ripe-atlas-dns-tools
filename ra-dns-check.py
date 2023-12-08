@@ -939,11 +939,12 @@ if args[0].scrape:
                                    'loc' :  loc,
                                    'host' : host,
                                    'lat' : p_probe_properties[probe_num]['latitude'],
-                                   'long' : p_probe_properties[probe_num]['longitude'],
+                                   'lon' : p_probe_properties[probe_num]['longitude'],
                                   }
-            print ("ripe_atlas_latency{} {} {}".format(str(ripe_atlas_latency).replace(" ",""),dnsprobe['result']['rt'],dnsprobe['timestamp']))
+            print ("ripe_atlas_latency{} {} {}".format(str(ripe_atlas_latency).replace(" ","").replace('\'','\"'),dnsprobe['result']['rt'],dnsprobe['timestamp']))
         except: 
             pass
+#    breakpoint()
     exit()
     
 while results_set_id <= last_results_set_id:
