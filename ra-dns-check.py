@@ -912,7 +912,9 @@ def load_probe_properties(probe_ids, ppcf):
 def dict_string(d):
     dict_str = ""
     for i,v in d.items():
-        dict_str += str(i) + "=\"" + str(v) + "\","
+        # Ignore the string output if the value of a key is "None"
+        if v != "None":
+            dict_str += str(i) + "=\"" + str(v) + "\","
     return dict_str.rstrip(",")
 
 # END of all function defs
@@ -940,8 +942,10 @@ if args[0].scrape:
             ripe_atlas_latency = { 'measurement_id' : str(dnsprobe['msm_id']), 
                                    'probe_id' : str(dnsprobe['prb_id']),
                                    'version' : str(dnsprobe['af']),
-                                   'probe_asn' : str(p_probe_properties[probe_num]['asn_v4']),
-                                   'probe_ip' : str(dnsprobe['from']),
+                                   'probe_asn_v4' : str(p_probe_properties[probe_num]['asn_v4']),
+                                   'probe_address_v4' : str(p_probe_properties[probe_num]['address_v4']),
+                                   'probe_asn_v6' : str(p_probe_properties[probe_num]['asn_v6']),
+                                   'probe_address_v6' : str(p_probe_properties[probe_num]['address_v6']),
                                    'country' :  str(p_probe_properties[probe_num]['country_code']),
                                    'loc' : str(dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[1]), 
                                    'host' : str(dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[0]),
