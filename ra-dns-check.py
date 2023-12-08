@@ -906,7 +906,14 @@ def load_probe_properties(probe_ids, ppcf):
     with open(ppcf, mode='w') as f:
         json.dump(all_probes_dict, f)
     return(matched_probe_info)
-
+####################
+#
+# Input a dictionary -> Output a single line of scrape formatted string 
+def dict_string(d):
+    dict_str = ""
+    for i,v in d.items():
+        dict_str += str(i) + "=\"" + str(v) + "\","
+    return dict_str.rstrip(",")
 
 # END of all function defs
 ##################################################
@@ -928,23 +935,23 @@ if args[0].scrape:
     for dnsprobe in dnsresult:
         try:
             probe_num = str(dnsprobe['prb_id'])
-            host = dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[0]
-            loc = dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[1]
-            ripe_atlas_latency = { 'measurement_id' : dnsprobe['msm_id'], 
-                                   'probe_id' : dnsprobe['prb_id'],
-                                   'version' : dnsprobe['af'],
-                                   'probe_asn' : p_probe_properties[probe_num]['asn_v4'],
-                                   'probe_ip' : dnsprobe['from'],
-                                   'country' :  p_probe_properties[probe_num]['country_code'],
-                                   'loc' :  loc,
-                                   'host' : host,
-                                   'lat' : p_probe_properties[probe_num]['latitude'],
-                                   'lon' : p_probe_properties[probe_num]['longitude'],
+            delay = dnsprobe['result']['rt']
+            timestamp = dnsprobe['timestamp']
+            ripe_atlas_latency = { 'measurement_id' : str(dnsprobe['msm_id']), 
+                                   'probe_id' : str(dnsprobe['prb_id']),
+                                   'version' : str(dnsprobe['af']),
+                                   'probe_asn' : str(p_probe_properties[probe_num]['asn_v4']),
+                                   'probe_ip' : str(dnsprobe['from']),
+                                   'country' :  str(p_probe_properties[probe_num]['country_code']),
+                                   'loc' : str(dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[1]), 
+                                   'host' : str(dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[0]),
+                                   'lat' : str(p_probe_properties[probe_num]['latitude']),
+                                   'lon' : str(p_probe_properties[probe_num]['longitude']),
                                   }
-            print ("ripe_atlas_latency{} {} {}".format(str(ripe_atlas_latency).replace(" ","").replace('\'','\"'),dnsprobe['result']['rt'],dnsprobe['timestamp']))
+            labels = dict_string(ripe_atlas_latency)
+            print (f'ripe_atlas_latency{{{labels}}} {delay} {timestamp}')
         except: 
             pass
-#    breakpoint()
     exit()
     
 while results_set_id <= last_results_set_id:
