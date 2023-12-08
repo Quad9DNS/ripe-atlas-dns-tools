@@ -423,8 +423,8 @@ def user_datetime_to_valid_unixtime(user_dt_string):
     # It's not unix time, so try to convert from some data time formats
     for f in accepted_datetime_formats:
         try:
-            # print (user_dt_string + ' / ' + f)
-            _unixtime_candidate = int(time.mktime(time.strptime(user_dt_string, f)))
+            # print (user_dt_string + ' / ' + f) and offset the time zone to UTC
+            _unixtime_candidate = int(time.mktime(time.strptime(user_dt_string, f))) - time.timezone
             if is_valid_unixtime(_unixtime_candidate):
                 logger.debug('Accepted %i as valid unixtime.\n' % _unixtime_candidate)
                 return (_unixtime_candidate)
