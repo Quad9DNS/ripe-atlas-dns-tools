@@ -879,32 +879,40 @@ def load_probe_properties(probe_ids, ppcf):
     # and discover new element not found in the caches. This reduce computational complexity
     dns_probes = set(str(x) for x in probe_ids)
     all_probes = set(all_probes_dict.keys())
+    #*******************
+    # remove this after complete testing
+    #*******************
     new_probes = dns_probes.difference(all_probes)
     for i in dns_probes:
         matched_probe_info[i] = all_probes_dict[i] 
-    try:
-        for p in new_probes:
+    for p in new_probes:
+        try:
             ripe_result = Probe(id=p)
             matched_probe_info[p] = {'asn_v4': ripe_result.asn_v4,
-                                    'asn_v6': ripe_result.asn_v6,
-                                    'country_code': ripe_result.country_code,
-                                    'address_v4':  ripe_result.address_v4,
-                                    'address_v6':  ripe_result.address_v6}
+                                      'asn_v6': ripe_result.asn_v6,
+                                      'country_code': ripe_result.country_code,
+                                      'lat':  ripe_result.geometry['coordinates'][1],
+                                      'lon':  ripe_result.geometry['coordinates'][0],
+                                      'address_v4':  ripe_result.address_v4,
+                                      'address_v6':  ripe_result.address_v6}
             all_probes_dict[p] = matched_probe_info[p]
             logger.debug('Probe %9s info fetched from RIPE' % p)
-    except:
-           # Otherwise, it's empty
-           # we did not find any information about the probe, so set values to '-'
-           matched_probe_info[p] = { 'asn_v4': '-',
-                                     'asn_v6': '-',
-                                     'country_code': '-',
-                                     'address_v4': '-',
-                                     'address_v6': '-' }
-           logger.debug('Failed to get info about probe ID %s in the local cache or from RIPE Atlas API.' % p)
+        except:
+            # Otherwise, it's empty
+            # we did not find any information about the probe, so set values to '-'
+            matched_probe_info[p] = { 'asn_v4': '-',
+                                      'asn_v6': '-',
+                                      'country_code': '-',
+                                      'lat':  '-',
+                                      'lon':  '-',
+                                      'address_v4': '-',
+                                      'address_v6': '-' }
+            logger.debug('Failed to get info about probe ID %s in the local cache or from RIPE Atlas API.' % p)
     logger.info('cache hits: %i   cache misses: %i.\n' % (probe_cache_hits, probe_cache_misses))
     # Write out the local JSON cache file
-    with open(ppcf, mode='w') as f:
-        json.dump(all_probes_dict, f)
+    if len(new_probes) != 0:
+        with open(ppcf, mode='w') as f:
+            json.dump(all_probes_dict, f)
     return(matched_probe_info)
 ####################
 #
