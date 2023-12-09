@@ -879,9 +879,6 @@ def load_probe_properties(probe_ids, ppcf):
     # and discover new element not found in the caches. This reduce computational complexity
     dns_probes = set(str(x) for x in probe_ids)
     all_probes = set(all_probes_dict.keys())
-    #*******************
-    # remove this after complete testing
-    #*******************
     new_probes = dns_probes.difference(all_probes)
     for i in dns_probes:
         matched_probe_info[i] = all_probes_dict[i] 
