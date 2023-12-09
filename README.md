@@ -47,5 +47,8 @@ don't need to do these again, unless the dependencies have changed.
   'rt' of DNS query. The output are formatted to allow Prometheus to scrape.
 * Additonally, another arugment --probes '<list of probes>' only output the specific probes values offered
   by the <list of probes>
+* if --datetime1 is missing, the latest set of data base on time now() will be output
+
 * ```ra-dns-check.py --datetime1 202210080000 12016241 --scrape```  
 * ```ra-dns-check.py --datetime1 202210080000 12016241 --scrape --probes "999,99"```  
+* ```ra-dns-check.py 64573001 --scrape```  
