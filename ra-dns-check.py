@@ -189,9 +189,13 @@ options_sample_dict = {
         'help': 'The max age (seconds) of the RIPE Atlas probe info file (older than this and we download a new one). Default: 86400',
         'type': 'integer'},
     'scrape': {
-        'default': '',
+        'default': False,
         'help': 'Scrape output for Prometheus',
-        'type': 'string'},
+        'type': 'boolean'},
+    'include_probe_timestamp': {
+        'default': False,
+        'help': 'Default timestamp are not display in the Prometheus output, toggle this switch to display timestamp',
+        'type': 'boolean'},
     'probes': {
         'default': [],
         'help': 'Selected probes list eg. "919,166,1049"',
@@ -269,6 +273,7 @@ parser.add_argument('-S', '--slow_threshold', help=options_sample_dict['slow_thr
 parser.add_argument('-t', '--split_char', help=options_sample_dict['split_char']['help'], type=str, default=options_sample_dict['split_char']['default'])
 parser.add_argument('-u', '--print_summary_stats', help=options_sample_dict['print_summary_stats']['help'], action='store_true', default=options_sample_dict['print_summary_stats']['default'])
 parser.add_argument('--scrape', help=options_sample_dict['scrape']['help'], action='store_true', default=options_sample_dict['scrape']['default'])
+parser.add_argument('--include_probe_timestamp', help=options_sample_dict['include_probe_timestamp']['help'], action='store_true', default=options_sample_dict['include_probe_timestamp']['default'])
 parser.add_argument('--probes', help=options_sample_dict['probes']['help'], type=str, default=options_sample_dict['probes']['default'])
 parser.add_argument('filename_or_msmid', help='one or two local filenames or RIPE Atlas Measurement IDs', nargs='+')
 parser.format_help()
@@ -958,7 +963,10 @@ if args[0].scrape:
                                    'probe_lon' : str(p_probe_properties[probe_num]['longitude']),
                                   }
             labels = dict_string(ripe_atlas_latency)
-            print (f'ripe_atlas_latency{{{labels}}} {delay} {timestamp}')
+            if args[0].include_probe_timestamp:
+                print (f'ripe_atlas_latency{{{labels}}} {delay} {timestamp}')
+            else:
+                print (f'ripe_atlas_latency{{{labels}}} {delay}')
         except: 
             pass
     exit()
