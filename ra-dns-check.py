@@ -951,11 +951,11 @@ if args[0].scrape:
                                    'probe_address_v4' : str(p_probe_properties[probe_num]['address_v4']),
                                    'probe_asn_v6' : str(p_probe_properties[probe_num]['asn_v6']),
                                    'probe_address_v6' : str(p_probe_properties[probe_num]['address_v6']),
-                                   'country' :  str(p_probe_properties[probe_num]['country_code']),
-                                   'loc' : str(dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[1]), 
-                                   'host' : str(dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[0]),
-                                   'lat' : str(p_probe_properties[probe_num]['latitude']),
-                                   'lon' : str(p_probe_properties[probe_num]['longitude']),
+                                   'probe_country' :  str(p_probe_properties[probe_num]['country_code']),
+                                   'sample_reported_pop' : str(dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[1]),
+                                   'sample_reported_host' : str(dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[0]),
+                                   'probe_lat' : str(p_probe_properties[probe_num]['latitude']),
+                                   'probe_lon' : str(p_probe_properties[probe_num]['longitude']),
                                   }
             labels = dict_string(ripe_atlas_latency)
             print (f'ripe_atlas_latency{{{labels}}} {delay} {timestamp}')
