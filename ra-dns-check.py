@@ -963,7 +963,7 @@ if args[0].scrape:
                                    'probe_lon' : str(p_probe_properties[probe_num]['longitude']),
                                   }
             labels = dict_string(ripe_atlas_latency)
-            if args[0].include_probe_timestamp:
+            if (args[0].include_probe_timestamp) and (args[0].datetime1 != None) :
                 print (f'ripe_atlas_latency{{{labels}}} {delay} {timestamp}')
             else:
                 print (f'ripe_atlas_latency{{{labels}}} {delay}')
