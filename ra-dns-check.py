@@ -870,12 +870,20 @@ def load_probe_properties(probe_ids, ppcf):
     all_probes_dict = {}
     #
     logger.info ('Reading the probe data dictionary as a JSON file from %s...\n' % ppcf)
-    try:
-        with open(ppcf, 'r') as f:
-            all_probes_dict = json.load(f)
-    except:
-        logger.critical ('Cannot read probe data from file: %s\n' % ppcf)
-        exit(13)
+    while True:
+        try:
+            with open(ppcf, 'r') as f:
+                all_probes_dict = json.load(f)
+        except:
+            logger.critical ('Cannot read probe data from file: %s\n' % ppcf)
+            logger.critical ('Regenerating probe data to file: %s\n' % ppcf)
+            _res = check_update_probe_properties_cache_file(config['ripe_atlas_probe_properties_raw_file'],
+                                                         config['ripe_atlas_probe_properties_json_cache_file'],
+                                                         config['ripe_atlas_current_probe_properties_url'])
+            if _res != 0:
+                 logger.critical('Unexpected result when updating local cache files: %s' % _res)
+            continue
+        break
     # Loop through the list of supplied (seen) probe ids and collect their
     # info/meta data from either our local file or the RIPE Atlas API
     logger.info ('Matching seen probes with probe data; will query RIPE Atlas API for probe info not in local cache...\n')
