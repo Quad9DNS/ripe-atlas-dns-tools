@@ -1,6 +1,13 @@
 # ripe-atlas-dns-tools
 
-A Python script to read and display RIPE Atlas DNS Measurement results
+A Python script to read and display RIPE Atlas measurement results for 
+DNS measurements. There are two ingestion styles:
+
+ - compare two separate Atlas measurement tests against each other, either
+   as one-off tests, or picking a time/date for each.
+ - compare a single multi-interval Atlas measurement against itself
+   between two different times.
+
 
 ## Dependencies
 
