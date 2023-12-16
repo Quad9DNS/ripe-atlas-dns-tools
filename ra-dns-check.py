@@ -893,7 +893,7 @@ def load_probe_properties(probe_ids, ppcf):
     dns_probes = set(str(x) for x in probe_ids)
     all_probes = set(all_probes_dict.keys())
     new_probes = dns_probes.difference(all_probes)
-    for i in dns_probes:
+    for i in (dns_probes - new_probes):
         matched_probe_info[i] = all_probes_dict[i] 
     for p in new_probes:
         try:
