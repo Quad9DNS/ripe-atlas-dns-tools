@@ -960,6 +960,7 @@ if args[0].scrape:
             ripe_atlas_latency = { 'measurement_id' : str(dnsprobe['msm_id']), 
                                    'probe_id' : str(dnsprobe['prb_id']),
                                    'version' : str(dnsprobe['af']),
+                                   'target_ip' : str(dnsprobe['dst_addr']),
                                    'probe_asn_v4' : str(p_probe_properties[probe_num]['asn_v4']),
                                    'probe_address_v4' : str(p_probe_properties[probe_num]['address_v4']),
                                    'probe_asn_v6' : str(p_probe_properties[probe_num]['asn_v6']),
