@@ -964,24 +964,22 @@ if args[0].scrape:
                                    'version' : str(dnsprobe['af']),
                                    'target_ip' : str(dnsprobe['dst_addr']),
                                    'probe_asn_v4' : str(p_probe_properties[probe_num]['asn_v4']),
-                                   'probe_address_v4' : str(p_probe_properties[probe_num]['address_v4']),
+                                   'probe_address_v4' : str(dnsprobe['from']),
                                    'probe_asn_v6' : str(p_probe_properties[probe_num]['asn_v6']),
                                    'probe_address_v6' : str(p_probe_properties[probe_num]['address_v6']),
                                    'probe_country' :  str(p_probe_properties[probe_num]['country_code']),
                                    'probe_lat' : str(p_probe_properties[probe_num]['latitude']),
                                    'probe_lon' : str(p_probe_properties[probe_num]['longitude']),
                                    }
-            ripe_atlas_latency['sample_reported_pop'] = str(dnsprobe['result']['answers'][0]['RDATA'][0])
             ripe_atlas_latency['sample_reported_pop'] = str(dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[1])
             ripe_atlas_latency['sample_reported_host'] = str(dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[0])
-        except:
-            pass
-        finally:
             labels = dict_string(ripe_atlas_latency)
             if (args[0].include_probe_timestamp) or (args[0].datetime1 != None) :
                 print (f'ripe_atlas_latency{{{labels}}} {delay} {timestamp}')
             else:
                 print (f'ripe_atlas_latency{{{labels}}} {delay}')
+        except:
+            pass
     exit()
     
 while results_set_id <= last_results_set_id:
