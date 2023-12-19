@@ -953,7 +953,7 @@ def dict_string(d):
     for i,v in d.items():
         # Ignore the string output if the value of a key is "None"
         if v == "None":
-            dict_str += str(i) + "=\"" + "" + "\","
+            dict_str += str(i) + "=\"" + "unknown" + "\","
         else:
             dict_str += str(i) + "=\"" + str(v) + "\","
     return dict_str.rstrip(",")
@@ -1013,14 +1013,14 @@ if args[0].scrape:
                     ripe_atlas_latency['sample_reported_host'] = sanitize_string(str(nsid.split('.')[0]))
                 case 'cloudflare':
                     ripe_atlas_latency['sample_reported_pop'] = sanitize_string(str(dnsprobe['result']['answers'][0]['RDATA'][0]))
-                    ripe_atlas_latency['sample_reported_host'] = ""
+                    ripe_atlas_latency['sample_reported_host'] = "unknown"
                 case 'google':
                     nsid = decode_base64(base64.b64decode(str(dnsprobe['result']['abuf'])))
                     ripe_atlas_latency['sample_reported_pop'] = sanitize_string(str(nsid))
-                    ripe_atlas_latency['sample_reported_host'] = ""
+                    ripe_atlas_latency['sample_reported_host'] = "unknown"
                 case _:
-                    ripe_atlas_latency['sample_reported_pop'] = ""
-                    ripe_atlas_latency['sample_reported_host'] = ""
+                    ripe_atlas_latency['sample_reported_pop'] = "unknown"
+                    ripe_atlas_latency['sample_reported_host'] = "unknown"
             labels = dict_string(ripe_atlas_latency)
             if (args[0].include_probe_timestamp) or (args[0].datetime1 != None) :
                 print (f'ripe_atlas_latency{{{labels}}} {delay} {timestamp}')
