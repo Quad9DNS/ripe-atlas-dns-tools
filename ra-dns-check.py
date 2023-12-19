@@ -21,6 +21,7 @@ import time
 from datetime import datetime
 # to decompress RIPE Atlas probe data file
 import bz2
+import base64
 # needed to fetch the probe properties file from RIPE
 import urllib.request
 # These RIPE python modules are usually installed with pip:
@@ -957,6 +958,20 @@ def dict_string(d):
             dict_str += str(i) + "=\"" + str(v) + "\","
     return dict_str.rstrip(",")
 
+#####################
+#
+# Input a base64 encoded bytes string -> output the last word of the string
+def decode_base64(abuf):
+    locate_nsid = re.sub(r'(\\x..)|\'|(\\t)',' ',str(abuf)).split()
+    return locate_nsid[-1]
+
+#####################
+#
+# Input any string -> output with santinization of special characters with exception of '-'
+def sanitize_string(s):
+    # Regex to match special characters and remove it however need to preserve '-'
+    return re.sub(r'\W+','',s.replace('-','_'))
+
 # END of all function defs
 ##################################################
 
@@ -991,8 +1006,21 @@ if args[0].scrape:
                                    'probe_lat' : str(p_probe_properties[probe_num]['latitude']),
                                    'probe_lon' : str(p_probe_properties[probe_num]['longitude']),
                                    }
-            ripe_atlas_latency['sample_reported_pop'] = str(dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[1])
-            ripe_atlas_latency['sample_reported_host'] = str(dnsprobe['result']['answers'][0]['RDATA'][0].split('.')[0])
+            match args[0].id_servermethod:
+                case 'quad9':
+                    nsid = decode_base64(base64.b64decode(str(dnsprobe['result']['abuf'])))
+                    ripe_atlas_latency['sample_reported_pop'] = sanitize_string(str(nsid.split('.')[1]))
+                    ripe_atlas_latency['sample_reported_host'] = sanitize_string(str(nsid.split('.')[0]))
+                case 'cloudflare':
+                    ripe_atlas_latency['sample_reported_pop'] = sanitize_string(str(dnsprobe['result']['answers'][0]['RDATA'][0]))
+                    ripe_atlas_latency['sample_reported_host'] = ""
+                case 'google':
+                    nsid = decode_base64(base64.b64decode(str(dnsprobe['result']['abuf'])))
+                    ripe_atlas_latency['sample_reported_pop'] = sanitize_string(str(nsid))
+                    ripe_atlas_latency['sample_reported_host'] = ""
+                case _:
+                    ripe_atlas_latency['sample_reported_pop'] = ""
+                    ripe_atlas_latency['sample_reported_host'] = ""
             labels = dict_string(ripe_atlas_latency)
             if (args[0].include_probe_timestamp) or (args[0].datetime1 != None) :
                 print (f'ripe_atlas_latency{{{labels}}} {delay} {timestamp}')
