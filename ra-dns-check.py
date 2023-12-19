@@ -6,7 +6,7 @@
 
 # Please see the file LICENSE for the license.
 
-import argparse
+import argparse,argcomplete
 # need ast to more safely parse config file
 import ast
 import configparser
@@ -31,10 +31,12 @@ from ripe.atlas.sagan import DnsResult
 from ripe.atlas.cousteau import Measurement
 # for debugging
 from pprint import pprint
-
 #
 # Valid log levels
 valid_log_levels = ['DEBUG', 'INFO', 'WARN', 'ERROR', 'CRITICAL']
+
+# Valid id server method
+valid_id_server_method = ['quad9','google','cloudflare']
 
 # Change "CRITICAL" to DEBUG if you want debugging-level logging *before* this
 # script parses command line args, and subsequently sets the debug level:
@@ -196,10 +198,18 @@ options_sample_dict = {
         'default': False,
         'help': 'Default timestamp are not display in the Prometheus output, toggle this switch to display timestamp',
         'type': 'boolean'},
+    'autocomplete': {
+        'default': False,
+        'help': 'Autocomplete for all options available',
+        'type': 'boolean'},
     'probes': {
         'default': [],
         'help': 'Selected probes list eg. "919,166,1049"',
         'type': 'list'},
+    'id_servermethod': {
+        'default': 'quad9',
+        'help': 'Select the method to handle id.server, option include [quad9,google,cloudflare]',
+        'type': 'string'},
     'exclusion_list_file': {
         'default': None,
         'help': 'Filename for probe ID exclusion list',
@@ -274,9 +284,12 @@ parser.add_argument('-t', '--split_char', help=options_sample_dict['split_char']
 parser.add_argument('-u', '--print_summary_stats', help=options_sample_dict['print_summary_stats']['help'], action='store_true', default=options_sample_dict['print_summary_stats']['default'])
 parser.add_argument('--scrape', help=options_sample_dict['scrape']['help'], action='store_true', default=options_sample_dict['scrape']['default'])
 parser.add_argument('--include_probe_timestamp', help=options_sample_dict['include_probe_timestamp']['help'], action='store_true', default=options_sample_dict['include_probe_timestamp']['default'])
+parser.add_argument('--autocomplete', help=options_sample_dict['autocomplete']['help'], action='store_true', default=options_sample_dict['autocomplete']['default'])
 parser.add_argument('--probes', help=options_sample_dict['probes']['help'], type=str, default=options_sample_dict['probes']['default'])
+parser.add_argument('--id_servermethod', help=options_sample_dict['id_servermethod']['help'], type=str, choices=valid_id_server_method, default=options_sample_dict['id_servermethod']['default'])
 parser.add_argument('filename_or_msmid', help='one or two local filenames or RIPE Atlas Measurement IDs', nargs='+')
 parser.format_help()
+argcomplete.autocomplete(parser)
 args = parser.parse_known_args()
 ###pprint(args)
 
@@ -520,6 +533,13 @@ m_seen_probe_ids_set = {}
 #         self.country_code = country_code
 
 #     def id(self):
+
+# if autocomplete option is set, register all the options for autocomplete then exit
+if args[0].autocomplete:
+    prog = sys.argv[0].removeprefix("./")
+    print(f'source <(register-python-argcomplete {prog})')
+    os.system('source <(register-python-argcomplete {prog})')
+    exit()
 
 # Validate the supplied date-times and stick them in a list
 if args[0].datetime1:
