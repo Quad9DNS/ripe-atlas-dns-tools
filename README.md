@@ -52,3 +52,9 @@ don't need to do these again, unless the dependencies have changed.
 * ```ra-dns-check.py --datetime1 202210080000 12016241 --scrape```  
 * ```ra-dns-check.py --datetime1 202210080000 12016241 --scrape --probes "999,99"```  
 * ```ra-dns-check.py 64573001 --scrape```  
+
+* Add autocomplete support via argcomplete module. This feature allows the usage of tab key for command/arguments completion.
+
+* ```pip install -r requirements.txt```
+* ```./ra-dns-check.py --scrape 43869257 --autocomplete ```
+* ```source <(register-python-argcomplete ra-dns-check.py)```
