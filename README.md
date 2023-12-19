@@ -1,6 +1,20 @@
 # ripe-atlas-dns-tools
 
-A Python script to read and display RIPE Atlas DNS Measurement results
+A Python script to read and display RIPE Atlas measurement results for 
+DNS measurements. There are two ingestion styles:
+
+ - compare two separate Atlas measurement tests against each other, either
+   as one-off tests, or picking a time/date for each.
+ - compare a single multi-interval Atlas measurement against itself
+   between two different times.
+
+The primary goal is to evaluate the latency changes between the two 
+measurements and allow quick visualizations in ASCII form that highlights
+large changes.  Additionally, differences in reported POP code (using NSID
+results from DNS queries) are also output, allowing for A:B testing
+examination for BGP changes on an anycast network. (note: format of NSID 
+is currently assumed to be in Quad9 format of hostname.POPcode.suffix1.suffix2.tld)
+
 
 ## Dependencies
 
