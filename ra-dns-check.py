@@ -1006,19 +1006,19 @@ if args[0].scrape:
                                    'probe_lat' : str(p_probe_properties[probe_num]['latitude']),
                                    'probe_lon' : str(p_probe_properties[probe_num]['longitude']),
                                    }
-            match args[0].id_servermethod:
-                case 'quad9':
-                    nsid = decode_base64(base64.b64decode(str(dnsprobe['result']['abuf'])))
-                    ripe_atlas_latency['sample_reported_pop'] = sanitize_string(str(nsid.split('.')[1]))
-                    ripe_atlas_latency['sample_reported_host'] = sanitize_string(str(nsid.split('.')[0]))
-                case 'cloudflare':
+            method = args[0].id_servermethod
+            if method == 'quad9':
+                 nsid = decode_base64(base64.b64decode(str(dnsprobe['result']['abuf'])))
+                 ripe_atlas_latency['sample_reported_pop'] = sanitize_string(str(nsid.split('.')[1]))
+                 ripe_atlas_latency['sample_reported_host'] = sanitize_string(str(nsid.split('.')[0]))
+            elif method == 'cloudflare':
                     ripe_atlas_latency['sample_reported_pop'] = sanitize_string(str(dnsprobe['result']['answers'][0]['RDATA'][0]))
                     ripe_atlas_latency['sample_reported_host'] = "unknown"
-                case 'google':
+            elif method == 'google':
                     nsid = decode_base64(base64.b64decode(str(dnsprobe['result']['abuf'])))
                     ripe_atlas_latency['sample_reported_pop'] = sanitize_string(str(nsid))
                     ripe_atlas_latency['sample_reported_host'] = "unknown"
-                case _:
+            else:
                     ripe_atlas_latency['sample_reported_pop'] = "unknown"
                     ripe_atlas_latency['sample_reported_host'] = "unknown"
             labels = dict_string(ripe_atlas_latency)
