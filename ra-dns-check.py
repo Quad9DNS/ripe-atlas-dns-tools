@@ -215,6 +215,11 @@ options_sample_dict = {
         'default': None,
         'help': 'Filename for probe ID exclusion list',
         'type': 'string'},
+    'scrape_staleness_seconds': {
+        'default': int(time.time()),
+        'help': 'Staleness of the data/records that exceed this  value would be ignored. Staleness is determine between now() and record timestamp',
+        'type': 'integer'},
+
 }
 
 sample_config_string = sample_config_string_header
@@ -288,6 +293,7 @@ parser.add_argument('--include_probe_timestamp', help=options_sample_dict['inclu
 parser.add_argument('--autocomplete', help=options_sample_dict['autocomplete']['help'], action='store_true', default=options_sample_dict['autocomplete']['default'])
 parser.add_argument('--probes', help=options_sample_dict['probes']['help'], type=str, default=options_sample_dict['probes']['default'])
 parser.add_argument('--id_servermethod', help=options_sample_dict['id_servermethod']['help'], type=str, choices=valid_id_server_method, default=options_sample_dict['id_servermethod']['default'])
+parser.add_argument('--scrape_staleness_seconds', help=options_sample_dict['scrape_staleness_seconds']['help'], type=int, default=options_sample_dict['scrape_staleness_seconds']['default'])
 parser.add_argument('filename_or_msmid', help='one or two local filenames or RIPE Atlas Measurement IDs', nargs='+')
 parser.format_help()
 argcomplete.autocomplete(parser)
@@ -972,6 +978,16 @@ def sanitize_string(s):
     # Regex to match special characters and remove it however need to preserve '-'
     return re.sub(r'\W+','',s.replace('-','_'))
 
+#####################
+#
+# Input any timestamp and staleness -> output None value if timestamp exceed staleness else output timestamp
+def check_freshness(timestamp,staleness):
+    freshness = int(time.time()) - timestamp
+    if (freshness > staleness):
+        return None
+    else:
+        return timestamp
+
 # END of all function defs
 ##################################################
 
@@ -985,6 +1001,7 @@ except:
     probes = []
 
 if args[0].scrape:
+    staleness = args[0].scrape_staleness_seconds
     m, dnsresult = process_request(data_sources[results_set_id], results_set_id, unixtimes[results_set_id], probes)
     p_probe_properties = load_probe_properties([dnsresult[x]['prb_id'] for x in range(len(dnsresult))], config['ripe_atlas_probe_properties_json_cache_file'])
     print ('''# HELP ripe_atlas_latency The number of milliseconds for response reported by this probe for the time period requested on this measurement
@@ -993,39 +1010,42 @@ if args[0].scrape:
         try:
             probe_num = str(dnsprobe['prb_id'])
             delay = dnsprobe['result']['rt']
-            timestamp = dnsprobe['timestamp']
-            ripe_atlas_latency = { 'measurement_id' : str(dnsprobe['msm_id']), 
-                                   'probe_id' : str(dnsprobe['prb_id']),
-                                   'version' : str(dnsprobe['af']),
-                                   'target_ip' : str(dnsprobe['dst_addr']),
-                                   'probe_asn_v4' : str(p_probe_properties[probe_num]['asn_v4']),
-                                   'probe_address_v4' : str(dnsprobe['from']),
-                                   'probe_asn_v6' : str(p_probe_properties[probe_num]['asn_v6']),
-                                   'probe_address_v6' : str(p_probe_properties[probe_num]['address_v6']),
-                                   'probe_country' :  str(p_probe_properties[probe_num]['country_code']),
-                                   'probe_lat' : str(p_probe_properties[probe_num]['latitude']),
-                                   'probe_lon' : str(p_probe_properties[probe_num]['longitude']),
-                                   }
-            method = args[0].id_servermethod
-            if method == 'quad9':
-                 nsid = decode_base64(base64.b64decode(str(dnsprobe['result']['abuf'])))
-                 ripe_atlas_latency['sample_reported_pop'] = sanitize_string(str(nsid.split('.')[1]))
-                 ripe_atlas_latency['sample_reported_host'] = sanitize_string(str(nsid.split('.')[0]))
-            elif method == 'cloudflare':
-                    ripe_atlas_latency['sample_reported_pop'] = sanitize_string(str(dnsprobe['result']['answers'][0]['RDATA'][0]))
-                    ripe_atlas_latency['sample_reported_host'] = "unknown"
-            elif method == 'google':
-                    nsid = decode_base64(base64.b64decode(str(dnsprobe['result']['abuf'])))
-                    ripe_atlas_latency['sample_reported_pop'] = sanitize_string(str(nsid))
-                    ripe_atlas_latency['sample_reported_host'] = "unknown"
+            timestamp = check_freshness(dnsprobe['timestamp'],staleness)
+            if timestamp != None:
+                ripe_atlas_latency = { 'measurement_id' : str(dnsprobe['msm_id']),
+                                       'probe_id' : str(dnsprobe['prb_id']),
+                                       'version' : str(dnsprobe['af']),
+                                       'target_ip' : str(dnsprobe['dst_addr']),
+                                       'probe_asn_v4' : str(p_probe_properties[probe_num]['asn_v4']),
+                                       'probe_address_v4' : str(dnsprobe['from']),
+                                       'probe_asn_v6' : str(p_probe_properties[probe_num]['asn_v6']),
+                                       'probe_address_v6' : str(p_probe_properties[probe_num]['address_v6']),
+                                       'probe_country' :  str(p_probe_properties[probe_num]['country_code']),
+                                       'probe_lat' : str(p_probe_properties[probe_num]['latitude']),
+                                       'probe_lon' : str(p_probe_properties[probe_num]['longitude']),
+                                       }
+                method = args[0].id_servermethod
+                if method == 'quad9':
+                     nsid = decode_base64(base64.b64decode(str(dnsprobe['result']['abuf'])))
+                     ripe_atlas_latency['sample_reported_pop'] = sanitize_string(str(nsid.split('.')[1]))
+                     ripe_atlas_latency['sample_reported_host'] = sanitize_string(str(nsid.split('.')[0]))
+                elif method == 'cloudflare':
+                        ripe_atlas_latency['sample_reported_pop'] = sanitize_string(str(dnsprobe['result']['answers'][0]['RDATA'][0]))
+                        ripe_atlas_latency['sample_reported_host'] = "unknown"
+                elif method == 'google':
+                        nsid = decode_base64(base64.b64decode(str(dnsprobe['result']['abuf'])))
+                        ripe_atlas_latency['sample_reported_pop'] = sanitize_string(str(nsid))
+                        ripe_atlas_latency['sample_reported_host'] = "unknown"
+                else:
+                        ripe_atlas_latency['sample_reported_pop'] = "unknown"
+                        ripe_atlas_latency['sample_reported_host'] = "unknown"
+                labels = dict_string(ripe_atlas_latency)
+                if (args[0].include_probe_timestamp) or (args[0].datetime1 != None) :
+                    print (f'ripe_atlas_latency{{{labels}}} {delay} {timestamp}')
+                else:
+                    print (f'ripe_atlas_latency{{{labels}}} {delay}')
             else:
-                    ripe_atlas_latency['sample_reported_pop'] = "unknown"
-                    ripe_atlas_latency['sample_reported_host'] = "unknown"
-            labels = dict_string(ripe_atlas_latency)
-            if (args[0].include_probe_timestamp) or (args[0].datetime1 != None) :
-                print (f'ripe_atlas_latency{{{labels}}} {delay} {timestamp}')
-            else:
-                print (f'ripe_atlas_latency{{{labels}}} {delay}')
+                logger.info('Skipping probe %s - sample is %i seconds old' % (probe_num,int(time.time() - dnsprobe['timestamp'])))
         except:
             pass
     exit()
