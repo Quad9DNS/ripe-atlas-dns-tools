@@ -1034,7 +1034,7 @@ while results_set_id <= last_results_set_id:
 #for t in data_sources:
     # m will receive the measurement ID for the processed data source
     logger.debug('data_source: %s  results_set_id: %i  unixtime: %i\n' % (data_sources[results_set_id], results_set_id, unixtimes[results_set_id]))
-    m = process_request(data_sources[results_set_id], results_set_id, unixtimes[results_set_id], probes)
+    m, r = process_request(data_sources[results_set_id], results_set_id, unixtimes[results_set_id], probes)
     measurement_ids.append(m)
     ######
     # Summary stats
@@ -1068,7 +1068,6 @@ while results_set_id <= last_results_set_id:
     #
     results_set_id += 1
 # end of Data loading and summary stats reporting loop
-
 ########################################
 
 # Check to see if there are two sets of results.  If there are, see if
