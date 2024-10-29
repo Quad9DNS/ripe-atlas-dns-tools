@@ -3,11 +3,11 @@
 A Python script to read and display RIPE Atlas measurement results for 
 DNS measurements. There are three ingestion/reporting styles:
 
- - compare two separate Atlas measurement tests against each other, either
+ - compare two separate RIPE Atlas DNS measurement IDs against each other, either
    as one-off tests, or picking a time/date for each.
- - compare a single multi-interval Atlas measurement against itself
+ - compare a single multi-interval RIPE Atlas DNS measurement ID against itself
    between two different times.
- - extract data for a specific moment in time (default: "now") and report
+ - extract data for a RIPE Atlas DNS measurement ID at a specific moment in time (default: "now") and report
    latency
 
 The primary goal is to evaluate the latency changes between the two 
