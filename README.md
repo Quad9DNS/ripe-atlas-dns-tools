@@ -78,3 +78,5 @@ source <(register-python-argcomplete ra-dns-check.py)
 # this command pull the latest data on Oct 8 2022 for measurement 38588031 (probe 928 abd 975)
 ra-dns-check.py --datetime1 202210080000 12016241 --scrape --scrape_staleness_seconds 38588031 --probes "928,975" --log_level INFO
 ```
+
+Originally written by Johan A. van Zanten for Quad9, with subsequent improvements by Quad9.
