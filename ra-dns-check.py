@@ -219,6 +219,14 @@ options_sample_dict = {
         'default': int(time.time()),
         'help': 'Staleness of the data/records that exceed this  value would be ignored. Staleness is determine between now() and record timestamp',
         'type': 'integer'},
+    'force_ipv4': {
+        'default': False,
+        'help': 'Toggle to force IPv4 outbound connections',
+        'type': 'boolean'},
+    'force_ipv6': {
+        'default': False,
+        'help': 'Toggle to force IPv6 outbound connections',
+        'type': 'boolean'},
 
 }
 
@@ -294,6 +302,8 @@ parser.add_argument('--autocomplete', help=options_sample_dict['autocomplete']['
 parser.add_argument('--probes', help=options_sample_dict['probes']['help'], type=str, default=options_sample_dict['probes']['default'])
 parser.add_argument('--id_servermethod', help=options_sample_dict['id_servermethod']['help'], type=str, choices=valid_id_server_method, default=options_sample_dict['id_servermethod']['default'])
 parser.add_argument('--scrape_staleness_seconds', help=options_sample_dict['scrape_staleness_seconds']['help'], type=int, default=options_sample_dict['scrape_staleness_seconds']['default'])
+parser.add_argument('--force_ipv4', help=options_sample_dict['force_ipv4']['help'], action='store_true', default=options_sample_dict['force_ipv4']['default'])
+parser.add_argument('--force_ipv6', help=options_sample_dict['force_ipv6']['help'], action='store_true', default=options_sample_dict['force_ipv6']['default'])
 parser.add_argument('filename_or_msmid', help='one or two local filenames or RIPE Atlas Measurement IDs', nargs='+')
 parser.format_help()
 argcomplete.autocomplete(parser)
@@ -994,6 +1004,21 @@ def check_freshness(timestamp,staleness):
 ######
 #
 # Data loading and summary stats reporting loop ...
+
+
+if args[0].force_ipv4:
+    import requests
+    requests.packages.urllib3.util.connection.HAS_IPV6 = False
+elif args[0].force_ipv6:
+    import requests
+    import socket
+    def ipv6_only():
+        return socket.AF_INET6
+    if requests.packages.urllib3.util.connection.HAS_IPV6:
+        requests.packages.urllib3.util.connection.allowed_gai_family = ipv6_only
+    else:
+        logger.warn("IPv6 not supported. Ignoring --force_ipv6")
+
 
 try:
     probes = args[0].probes.split(',')
